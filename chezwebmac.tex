@@ -1,0 +1,27 @@
+\input eplain
+
+\font\titlef = cmr17
+\font\authorf = cmr14
+\font\dateversionf = cmr12
+
+\def\title#1{\def\titleval{#1}}
+\def\author#1{\def\authorval{#1}}
+\def\date#1{\def\dateval{#1}}
+\def\version#1{\def\versionval{#1}}
+\long\def\copyrights#1{\def\copyrightsval{#1}}
+
+\def\maketitle{\centerline{\titlef\titleval}\bigskip}
+\def\makeauthor{\centerline{\authorf\authorval}\bigskip}
+\def\makedateversion{%
+  \centerline{%
+    \dateversionf Version \versionval --- \dateval}
+  \bigskip}
+
+\def\maketitlepage{%
+  \maketitle
+  \makedateversion
+  \makeauthor
+  \vfil
+  \copyrightsval\par
+  \break}
+
