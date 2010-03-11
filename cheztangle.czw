@@ -1,0 +1,114 @@
+(@chezweb)
+
+(@ "
+\\centerline{\\titlefont ChezWEB Tangling}\\medskip
+\\centerline{Aaron W. Hsu}\\bigskip")
+
+(@* "Introduction" "
+ChezWEB does not have the normal concept of tangling that is found in
+CWEB, because a ChezWEB file is already a loadable Scheme program.
+Instead, we provide this module which can be turned into a boot file and
+treated like a normal Scheme application. When launched, the provided
+REPL will be just like a normal Scheme REPL, but it will also have the
+right settings to enable you to load, compile, and run ChezWEB programs.
+
+A ChezWEB program should have a header |(@chezweb)| at the beginning of
+its file. In a tangle program this is a no-op."
+
+(@> |Define @chezweb| () (@chezweb) ()
+(define-syntax @chezweb
+  (syntax-rules ()
+    [(_) (begin)]))))
+
+(@* "Control Codes" "
+The primary control codes for ChezWEB are |@>|, |@<|, |@*|, |@|, and |@c|. The
+|@>| control code handles the named section definitions.
+
+A named section defines an isolated chunk of code that has a set of
+imports, exports, and captures. Imports are valid Chez Scheme import
+specifications, and exports are valid export specifications as defined
+for modules. Captures are identifiers that, if free in the code chunk,
+will capture bindings at the call site. That is, they are dynamically,
+rather than lexically scoped.
+
+A chunk can either be a value expression or a definition expression. In
+the first case there will be no exports, and we can use a nil let form
+to do our work. In the latter, we must use a module to encapsulate the
+code chunk."
+
+(@> |Define @>| () (@>) ()
+(... (define-syntax @>
+  (syntax-rules ()
+    [(_ name (i ...) () (c ...) e1 e2 ...)
+     (define-syntax name
+       (lambda (x)
+         (syntax-case x ()
+           [(k)
+            (with-implicit (k c ...)
+              #'(let ()
+                  (import i ...)
+                  e1 e2 ...))])))]
+    [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
+     (define-syntax name
+       (lambda (x) 
+         (syntax-case x ()
+           [(k)
+            (with-implicit (k c ... e ...)
+              #'(module (e ...)
+                  (import i ...)
+                  e1 e2 ...))])))])))))
+
+(@ ""
+(@> |Define @<| () (@<) ()
+(define-syntax @<
+  (syntax-rules ()
+    [(_ id) (id)]))))
+
+(@ ""
+(@> |Define @| () (@) ()
+(... (define-syntax @
+  (syntax-rules ()
+    [(_ documentation exp ...)
+     (string? (syntax->datum #'documentation))
+     (begin exp ...)])))))
+
+(@ ""
+(@> |Define @*| () (@*) ()
+(... (define-syntax @*
+  (syntax-rules ()
+    [(_  level name documentation exp ...)
+     (and (integer? (syntax->datum #'level))
+          (exact? (syntax->datum #'level))
+          (string? (syntax->datum #'name))
+          (string? (syntax->datum #'documentation)))
+     (begin exp ...)]
+    [(_ name documentation exp ...)
+     (and (string? (syntax->datum #'name))
+          (string? (syntax->datum #'documentation)))
+     (begin exp ...)]
+    [(_ level name exp ...)
+     (and (integer? (syntax->datum #'level))
+          (exact? (syntax->datum #'level))
+          (string? (syntax->datum #'name)))
+     (begin exp ...)]
+    [(_ name exp ...)
+     (string? (syntax->datum #'name))
+     (begin exp ...)])))))
+
+(@ ""
+(@> |Define @c| () (@c) ()
+(... (define-syntax @c
+  (syntax-rules ()
+    [(_ e1 e2 ...) (begin e1 e2 ...)])))))
+
+(@* "Module Declaration" ""
+(@c
+(module (@chezweb @> @* @ @c @<)
+  (import (chezscheme))
+(@< |Define @chezweb|)
+(@< |Define @<|)
+(@< |Define @>|)
+(@< |Define @|)
+(@< |Define @*|)
+(@< |Define @c|)
+)))

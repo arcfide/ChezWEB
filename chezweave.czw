@@ -1,0 +1,135 @@
+#!chezscheme
+(library (arcfide chezweb weave)
+  (export @chezweb @ @* @> @< @c wrap code->string)
+  (import (chezscheme))
+
+(define-syntax define-quoter/except
+  (syntax-rules ()
+    [(_ wrap n1 n2 ...)
+     (for-all identifier? #'(wrap n1 n2 ...))
+     (define-syntax wrap
+       (syntax-rules (n1 n2 ...)
+         [(_ (n1 rest (... ...)))
+          (n1 rest (... ...))]
+         [(_ (n2 rest (... ...)))
+          (n2 rest (... ...))]
+         ...
+         [(_ (head rest (... ...)))
+          (list (wrap head) (wrap rest) (... ...))]
+         [(_ other)
+          (quote other)]))]))
+
+(define-quoter/except wrap @ @* @> @< @p @c @l)
+
+(define (code->string x)
+  (if (string? x)
+      x
+      (with-output-to-string (lambda () (pretty-print x)))))
+  
+(meta define (maybe-list/identifier? x)
+  (syntax-case x ()
+    [(id ...) (for-all identifier? #'(id ...)) #t]
+    [id (identifier? #'id) #t]
+    [else #f]))
+
+(define-syntax @>
+  (syntax-rules ()
+    [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
+     (and (for-all maybe-list/identifier? #'(i ... e ...))
+          (for-all identifier? #'(name c ...)))
+     (render-@> 'name '(i ...) '(e ...) '(c ...)
+       (wrap e1) (wrap e2) ...)]))
+
+(define (render-@> name imports exports captures . code)
+  (format
+    "\\chunk{~a}{~{~a~^, ~}}{~{~a~^, ~}}{~{~a~^, ~}}\n~{~a~}\\endchunk\n"
+    name imports exports captures (map code->string code)))
+
+(define-syntax @<
+  (syntax-rules ()
+    [(_ id) (render-@< 'id)]))
+
+(define (render-@< id)
+  (format "\\chunkref{~a}" id))
+
+(define-syntax @
+  (syntax-rules ()
+    [(_ documentation exp ...)
+     (string? (syntax->datum #'documentation))
+     (render-@ documentation (wrap exp) ...)]))
+
+(define (render-@ doc . code)
+  (format "\\sect~a\n~{~a~}\\endsect\n"
+    doc code))
+
+(define-syntax @*
+  (syntax-rules ()
+    [(_  level name documentation e1 e2 ...)
+     (and (exact? (syntax->datum #'level))
+          (integer? (syntax->datum #'level))
+          (string? (syntax->datum #'name))
+          (string? (syntax->datum #'documentation)))
+     (render-@* level name documentation (wrap e1) (wrap e2) ...)]
+    [(_ name documentation e1 e2 ...)
+     (and (string? (syntax->datum #'name))
+          (string? (syntax->datum #'documentation)))
+     (render-@* 0 name documentation (wrap e1) (wrap e2) ...)]
+    [(_ level name e1 e2 ...)
+     (and (exact? (syntax->datum #'level))
+          (integer? (syntax->datum #'level))
+          (string? (syntax->datum #'name)))
+     (render-@* level name "" (wrap e1) (wrap e2) ...)]
+    [(_ name e1 e2 ...)
+     (string? (syntax->datum #'name))
+     (render-@* 0 name "" (wrap e1) (wrap e2) ...)]))
+
+(define (render-@* level name docs . code)
+  (format "\\nsect{~a}{~a}~a\n~{~a~}\\endnsect\n"
+    level name docs code))
+
+(define-syntax @c
+  (syntax-rules ()
+    [(_ e1 e2 ...) 
+     (render-@c (wrap e1) (wrap e2) ...)]))
+
+(define (render-@c . code)
+  (format "\\code\n~{~a~}\\endcode\n" (map code->string code)))
+
+;; Doesn't work right now.
+(define-syntax @l
+  (lambda (x)
+    (syntax-case x ()
+      [(k name (e ...) (i ...) e1 e2 ...)
+       (with-implicit (k import)
+         #'(library name (export e ...) (import (chezweb) i ...)
+             e1 e2 ...))])))
+
+(define-syntax @chezweb
+  (syntax-rules ()
+    [(_) "\\input chezwebmac\n"]))
+    
+)
+
+(let ()
+  (import (chezscheme) (arcfide chezweb weave))
+  
+(define env (environment '(arcfide chezweb weave)))
+
+(define (weave-file file)
+  (let ([out (format "~a.tex" (path-root file))])
+    (call-with-input-file file
+      (lambda (ip)
+        (call-with-output-file out
+          (lambda (op)
+            (let loop ([in (read ip)])
+              (unless (eof-object? in)
+                (display (eval `(code->string (wrap ,in)) env) op)
+                (loop (read ip)))))
+          'replace)))))
+
+(define (init/start . fns)
+  (for-each weave-file fns))
+
+(scheme-start init/start)
+
+)
