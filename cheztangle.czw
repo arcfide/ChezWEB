@@ -58,13 +58,22 @@ code chunk."
                   (import i ...)
                   e1 e2 ...))])))])))))
 
-(@ ""
+(@ "
+|@<| inserts the specified chunk into its call site. Naturally it
+preserves the original scope and semantics as the chunk defines. Since
+each chunk can be expanded itself, there is not reason to do anything
+else here. We have this macro mostly to produce the correct woven 
+code."
+
 (@> |Define @<| () (@<) ()
 (define-syntax @<
   (syntax-rules ()
     [(_ id) (id)]))))
 
-(@ ""
+(@ "
+The |@| control code wraps documentation, and since there is no reason
+to evaluate documentation, just expand to the internal expressions."
+
 (@> |Define @| () (@) ()
 (... (define-syntax @
   (syntax-rules ()
@@ -72,7 +81,11 @@ code chunk."
      (string? (syntax->datum #'documentation))
      (begin exp ...)])))))
 
-(@ ""
+(@ "
+The |@*| control code is most the same as the |@| control code in that
+we should just eliminate the documentation and evaluate the meaningful
+subexpressions."
+
 (@> |Define @*| () (@*) ()
 (... (define-syntax @*
   (syntax-rules ()
@@ -95,13 +108,23 @@ code chunk."
      (string? (syntax->datum #'name))
      (begin exp ...)])))))
 
-(@ ""
+(@ "
+The |@c| is a top level code form, and is basically just another way
+of writing |begin|."
+
 (@> |Define @c| () (@c) ()
 (... (define-syntax @c
   (syntax-rules ()
     [(_ e1 e2 ...) (begin e1 e2 ...)])))))
 
-(@* "Module Declaration" ""
+(@* "Module Declaration" "
+This whole program is really just a module that is implicitly imported
+when it's loaded. To do this, we just need to have the whole thing
+wrapped in a module, and we get the benefits for free when we use the
+boot file created from this file instead of the normal pettie.boot or
+scheme.boot. The boot file that is created should have a dependency on
+scheme.boot. "
+
 (@c
 (module (@chezweb @> @* @ @c @<)
   (import (chezscheme))
