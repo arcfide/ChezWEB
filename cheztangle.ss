@@ -1,4 +1,4 @@
- (module (@chezweb @> @* @ @c)
+ (module (@chezweb @> @* @< @ @c)
   (import (chezscheme))
   
 (define-syntax @chezweb

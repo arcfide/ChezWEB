@@ -1,7 +1,7 @@
 #!chezscheme
 (library (arcfide chezweb weave)
-  (export @chezweb @ @* @> @< @c wrap code->string)
-  (import (chezscheme))
+  (export @chezweb @ @* @> @< @c wrap code->string module)
+  (import (rename (chezscheme) (module %module)))
 
 (define-syntax define-quoter/except
   (syntax-rules ()
@@ -19,7 +19,12 @@
          [(_ other)
           (quote other)]))]))
 
-(define-quoter/except wrap @ @* @> @< @p @c @l)
+(define-quoter/except wrap @chezweb @ @* @> @< @p @c @l module)
+
+(define-record-type section-ref (fields name))
+
+(define (section-ref-writer record port print)
+  (put-string port (section-ref-name record)))
 
 (define (code->string x)
   (if (string? x)
@@ -50,7 +55,7 @@
     [(_ id) (render-@< 'id)]))
 
 (define (render-@< id)
-  (format "\\chunkref{~a}" id))
+  (make-section-ref (format "\\chunkref{~a}" id)))
 
 (define-syntax @
   (syntax-rules ()
@@ -107,11 +112,22 @@
 (define-syntax @chezweb
   (syntax-rules ()
     [(_) "\\input chezwebmac\n"]))
+
+(define-syntax module
+  (syntax-rules ()
+    [(_ (exports ...) b1 b2 ...)
+     (for-all identifier? #'(exports ...))
+     `(module (exports ...) ,(wrap b1) ,(wrap b2) ...)]
+    [(_ name (exports ...) b1 b2 ...)
+     (for-all identifier? #'(name exports ...))
+     `(module name (exports ...) ,(wrap b1) ,(wrap b2) ...)]))
     
+(record-writer (record-type-descriptor section-ref) section-ref-writer)
+
 )
 
 (let ()
-  (import (chezscheme) (arcfide chezweb weave))
+  (import (chezscheme))
   
 (define env (environment '(arcfide chezweb weave)))
 
