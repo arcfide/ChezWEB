@@ -140,7 +140,8 @@
             (let loop ([in (read ip)])
               (unless (eof-object? in)
                 (display (eval `(code->string (wrap ,in)) env) op)
-                (loop (read ip)))))
+                (loop (read ip))))
+            (put-string op "\n\\bye\n"))
           'replace)))))
 
 (define (init/start . fns)
