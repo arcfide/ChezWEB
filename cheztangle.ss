@@ -1,6 +1,7 @@
- (module (@chezweb @> @* @< @ @c)
+(library (arcfide chezweb tangle)
+  (export @chezweb @> @* @< @ @c @l)
   (import (chezscheme))
-  
+
 (define-syntax @chezweb
   (syntax-rules ()
     [(_) (begin)]))
@@ -61,15 +62,19 @@
   (syntax-rules ()
     [(_ e1 e2 ...) (begin e1 e2 ...)]))
 
-;; Doesn't work right now.
-#|
 (define-syntax @l
   (lambda (x)
     (syntax-case x ()
-      [(k name (e ...) (i ...) e1 e2 ...)
-       (with-implicit (k import)
-         #'(library name (export e ...) (import (chezweb) i ...)
-             e1 e2 ...))])))
-|#
+      [(k doc (n1 n2 ...) (export e ...) (import i ...) body ...)
+       (and (string? (syntax->datum #'doc))
+            (eq? 'export (syntax->datum #'export))
+            (eq? 'import (syntax->datum #'import)))
+       (with-implicit (k library arcfide chezweb bootstrap)
+         #'(library (n1 n2 ...)
+             (export e ...)
+             (import (arcfide chezweb bootstrap) i ...)
+             body ...))])))
 
 )
+
+(import (arcfide chezweb tangle))
