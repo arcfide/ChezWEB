@@ -1,0 +1,120 @@
+ChezWEB: A WEB system for Scheme
+================================
+
+Copyright (c) 2010 Aaron W. Hsu <arcfide@sacrideo.us>.
+
+ChezWEB is a system for doing Knuthian style WEB programming in Scheme,
+and more particularly, it is implemented in Chez Scheme. It has a
+number of novel features, and is designed to provide a level of 
+integration with Scheme that is not to be found in other Literate
+Programming systems.
+
+I have provided the quickstart information first, and you can find
+the rest of the documentation further down.
+
+Installing ChezWEB (QuickStart)
+-------------------------------
+
+The fastest way to install ChezWEB is to use the make file provided.
+There are a few constants defined at the top of the file, which you
+can change for your particular installation, but otherwise, it should
+be as easy as:
+
+  $ make install
+
+which will install the bootfiles for ChezWEB into the appropriate
+Chez Scheme folder, as well as create the program links in the 
+appropriate bin directory. If you have custom needs, please make
+sure to edit the variables to make sure that things are installed
+correctly.
+
+The makefile assumes that you already have a version of Chez Scheme
+installed.
+
+System Requirements
+-------------------
+
+ChezWEB requires Chez Scheme 7.9+, as it is built on R6RS.
+
+What makes ChezWEB unique? Why should I use it?
+-----------------------------------------------
+
+If you are reading this, I am going to assume that you already believe
+in literate programming to some extent. Otherwise, if you don't find
+any benefit to literate programming at all, then you probably will not
+like ChezWEB.
+
+However, if you like the idea of literate programming, I can hopefully
+entice you into using ChezWEB for all your Literate Scheme needs.
+I created ChezWEB because I was tired of literate programming that
+wasn't Schemely, and that did not provide me with a proper level of
+integration with Scheme.
+
+Admittedly, the integration with Scheme in ChezWEB is lacking in the
+area of pretty printing and a few other formatting niceities, but this
+will hopefully be rectified by the first official 1.0 release. What
+it does provide, is an integration with the concepts that underly
+Scheme, including lexical scope, and the interaction environment.
+
+Literate programming is really a sophisticated form of macrology.
+Literate programming tools are like macro languages on top of the
+normal programming language. These are usually fairly baroque when
+you compare them to the hygienic sophistication that is available
+in Scheme through syntax-rules and the full programmatic power of
+syntax-case. However, they suffice quite well for other languages
+that have no concept of these tools. Unfortunately, while it is okay
+to have an additional macro preprocessor on top of my Scheme code,
+the normal Literate programming tools have a number of severe drawbacks
+that I don't like.
+
+The largest problem concerns lexical scope. The normal programming
+style one follows with a tool like CWEB or Noweb, is to have a bunch
+of chunks or sections that just drop themselves into wherever they
+are referenced. They are, in a sense, dynamically scoped. Scheme,
+though, is a lexically scoped language, and it's rather ugly to
+be dropping what is essentially a dynamically scoped macro language
+on top; if I wanted that, I would be using DEFMACRO and Common Lisp!
+
+ChezWEB bridges this gap. ChezWEB is actually built on top of the
+Scheme macro system. It's an integrated part of Scheme, not just a
+preprocessor on top of the Scheme macro system. This integration
+lets it have access to the very important concept of hygiene and
+lexical scope. When you define a section in ChezWEB, you define its
+environment as well, including any imports, any exports that are 
+visible outside of the chunk when it is referenced, as well as any
+variables that are dynamically scoped (captures) whenever that
+chunk is referenced. This means that you can control the scoping
+and visibility of variables in your literate programs in the same
+way that you already do with modules. In fact, the idea of a section
+in WEB naturally fits within the idea of a module in Scheme.
+
+Another complaint about literate programs is that you have to
+compile them before you can use them in your Scheme environment.
+Not so with ChezWEB. Because the code is actually Scheme code, you
+use tangle as you would any other Scheme REPL. In fact, cheztangle
+is just the Scheme REPL with an additional set of bindings for
+the control codes in ChezWEB. This means that you don't ever
+need to compile programs written in ChezWEB to use them. You just
+load them up and you can interact and debug them directly.
+
+Of course, you don't lose out on weaving because of these advantages,
+instead, when you weave a ChezWEB file, you get back your nice
+TeX file the way you would expect. I have tried to mirror the
+look and feel of normal CWEB documents as much as possible.
+
+Documentation
+-------------
+
+Ironically, there is not much documentation available for ChezWEB
+at the moment. I'm working on that. You can get a feel for how it
+is used by taking a look at the sample cheztangle.czw file. It's a
+ChezWEB version of the cheztangle.ss file. Unfortunately, because
+of the way that ChezWEB is written right now, you can't load that
+into the tangle environment. You can weave it though.
+
+Contact/Support
+---------------
+
+Please contact Aaron W. Hsu <arcfide@sacrideo.us> if you have any
+questions about the system, or if you have patches to commit. I 
+welcome any additions and contributions!
