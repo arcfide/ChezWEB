@@ -11,8 +11,8 @@ REPL will be just like a normal Scheme REPL, but it will also have the
 right settings to enable you to load, compile, and run ChezWEB programs.
 "
 
-(@l "
-A single library |(arcfide chezweb tangle)| is defined that contains
+(@l 
+"A single library |(arcfide chezweb tangle)| is defined that contains
 all the usual definitions that need to be used."
 
 (arcfide chezweb tangle)

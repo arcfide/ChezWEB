@@ -1,6 +1,6 @@
 #!chezscheme
 (library (arcfide chezweb weave)
-  (export @chezweb @ @* @> @< @c wrap code->string module)
+  (export @chezweb @ @* @> @< @c @l wrap code->string module)
   (import (rename (chezscheme) (module %module)))
 
 (define-syntax define-quoter/except
@@ -102,12 +102,16 @@
 
 ;; Doesn't work right now.
 (define-syntax @l
-  (lambda (x)
-    (syntax-case x ()
-      [(k name (e ...) (i ...) e1 e2 ...)
-       (with-implicit (k import)
-         #'(library name (export e ...) (import (chezweb) i ...)
-             e1 e2 ...))])))
+  (syntax-rules ()
+    [(k doc (n1 n2 ...) (export e ...) (import i ...) b1 b2 ...)
+     (and (string? (syntax->datum #'doc))
+          (eq? 'export (syntax->datum #'export))
+          (eq? 'import (syntax->datum #'import)))
+     (format 
+       "\\library{~a}{~a}{~{~a~^ ~}}{~{~a~^ ~}}\n~{~a~}\\endlibrary{~a}\n"
+       doc '(n1 n2 ...) '(e ...) '(i ...)
+       `(,(wrap b1) ,(wrap b2) ...)
+       '(n1 n2 ...))]))
 
 (define-syntax @chezweb
   (syntax-rules ()
