@@ -20,7 +20,7 @@ clean:
 	rm -rf chezweb-${VERSION} chezweb-${VERSION}.tar.xz
 	rm -rf cheztangle.boot chezweave.boot
 
-install: clean build
+install: build
 	cp cheztangle.boot chezweave.boot ${CSV}/${MACHINE}/
 	ln -sf ${PETITE} ${BIN}/cheztangle
 	ln -sf ${PETITE} ${BIN}/chezweave
