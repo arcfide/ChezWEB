@@ -89,7 +89,7 @@
        (and (string? (syntax->datum #'doc))
             (eq? 'export (syntax->datum #'export))
             (eq? 'import (syntax->datum #'import)))
-       (with-implicit (k library arcfide chezweb bootstrap)
+       (with-implicit (k library arcfide chezweb tangle import export)
          #'(library (n1 n2 ...)
              (export e ...)
              (import (arcfide chezweb tangle) i ...)
