@@ -3,6 +3,7 @@ PETITE=/usr/bin/petite
 MACHINE=ta6le
 BIN=/usr/local/bin
 VERSION=0.9
+TEXMF=/usr/share/texmf-local/tex/chezweb
 
 .SUFFIXES: .boot .ss
 
@@ -19,6 +20,8 @@ install: build
 	cp cheztangle.boot chezweave.boot ${CSV}/${MACHINE}/
 	ln -sf ${PETITE} ${BIN}/cheztangle
 	ln -sf ${PETITE} ${BIN}/chezweave
+	mkdir -p ${TEXMF}
+	cp chezwebmac.tex ${TEXMF}
 
 .ss.boot:
 	@echo '(make-boot-file "$@" '"'"'("scheme.boot" "petite.boot") "$<")' scheme -q
