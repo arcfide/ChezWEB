@@ -92,7 +92,7 @@
        (with-implicit (k library arcfide chezweb bootstrap)
          #'(library (n1 n2 ...)
              (export e ...)
-             (import (arcfide chezweb bootstrap) i ...)
+             (import (arcfide chezweb tangle) i ...)
              body ...))])))
 
 )

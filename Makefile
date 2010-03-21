@@ -16,7 +16,11 @@ package:
 	  Makefile README chezweb-${VERSION}
 	tar cv chezweb-${VERSION} | xz -zc > chezweb-${VERSION}.tar.xz
 
-install: build
+clean:
+	rm -rf chezweb-${VERSION} chezweb-${VERSION}.tar.xz
+	rm -rf cheztangle.boot chezweave.boot
+
+install: clean build
 	cp cheztangle.boot chezweave.boot ${CSV}/${MACHINE}/
 	ln -sf ${PETITE} ${BIN}/cheztangle
 	ln -sf ${PETITE} ${BIN}/chezweave
@@ -24,6 +28,6 @@ install: build
 	cp chezwebmac.tex ${TEXMF}
 
 .ss.boot:
-	@echo '(make-boot-file "$@" '"'"'("scheme.boot" "petite.boot") "$<")' scheme -q
+	@echo '(make-boot-file "$@" '"'"'("scheme.boot" "petite.boot") "$<")' | scheme -q
 
 

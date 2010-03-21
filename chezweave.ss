@@ -84,7 +84,7 @@
      (render-@ documentation (wrap exp) ...)]))
 
 (define (render-@ doc . code)
-  (format "\\sect~a\n~{~a~}\\endsect\n"
+  (format "\\sect ~a\n~{~a~}\\endsect\n"
     doc code))
 
 (define-syntax @*
@@ -169,7 +169,6 @@
           'replace)))))
 
 (define (init/start . fns)
-  (printf "~s\n" fns)
   (when (null? fns)
     (printf "chezweave: <file> ...\n")
     (exit 1))
