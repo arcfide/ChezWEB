@@ -31,30 +31,81 @@
   {\noindent\bf\the\sectc . #2.} }
 \def\endnsect{\medskip}
 
+% We need to be able to create a verbatim environment that allows
+% macro and commands to be run.
+
 \def\chunk#1#2#3#4{%
   \bgroup
   %def\chunkimports{#2}
   %def\chunkexports{#3}
   %def\chunkcaptures{#4}
-  \hfil\break$\langle$ #1 $\rangle \equiv$\hfil\break
-  \parindent = 12pt
-  \catcode`\#12
-  \catcode`\_12
-  \tt
-  \obeylines\obeyspaces}
-\def\endchunk{\egroup}
+  \hfil\break$\langle$ #1 $\rangle \equiv$
+  \ttverbatim}
+\def\endchunk{\endgroup\egroup}
 
 \def\code{%
   \bgroup
-  \hfil\break$\langle * \rangle +\equiv$\hfil\break
-  \parindent = 12pt
-  \obeylines\obeyspaces
-  \catcode`\#12
-  \catcode`\_12
-  \tt}
-\def\endcode{\egroup}
+  \hfil\break$\langle * \rangle \equiv$
+  \ttverbatim}
+\def\endcode{\endgroup\egroup}
 
 \def\x#1;{\char"#1 }
 
 \def\chunkref#1{%
   $\langle$ #1 $\rangle$}
+
+%   ttbar.tex
+ 
+ 
+% Lifted from TUGBOT.STY.
+%
+%       Support verbatim listing of TeX source, as defined in TeXbook, p. 421;
+%       lifted from MANMAC.TEX, and modified slightly for narrower columns.
+ 
+\chardef\other=12
+\def\ttverbatim{\begingroup 
+  \catcode`\&=\other \catcode`\#=\other \catcode`\%=\other
+  \catcode`\~=\other \catcode`\_=\other \catcode`\^=\other
+  \catcode`\"=\other
+  \obeyspaces \obeylines \tt}
+ 
+\newskip\ttglue
+{\tt \global\ttglue=.5em plus .25em minus .15em}
+% this should be installed in each font
+ 
+%       From David Eppstein's ``Trees'' paper (6#1), preserve initial spaces.
+{\obeyspaces\gdef {\ifvmode\indent\fi\space}}
+ 
+\newdimen\ttrightskip
+\ttrightskip=5pc
+ 
+\newif\ifttVertChar \ttVertCharfalse
+{\catcode`\|=\active \gdef\VertChar{\def|{\char"7C }}}
+ 
+%\outer\def\begintt{$$\let\par=\endgraf \ttverbatim \parskip=\z@
+\outer\def\begintt{$$\def\par{\leavevmode\null\endgraf}\ttverbatim \parskip=\z@
+  \ifttVertChar \VertChar \global\ttVertCharfalse \else \catcode`\|=0 \fi
+  \catcode`\|=0 \rightskip=-\ttrightskip \ttfinish}
+{\catcode`\|=0 |catcode`|\=\other % | is temporary escape character
+  |obeylines % end of line is active
+  |gdef|ttfinish#1^^M#2\endtt{#1|vbox{#2}|endgroup$$}}
+ 
+%       Other non-tt elements that may be embedded within \begintt...\endtt .
+\def\MTH{$}
+\def\sb{_}
+\def\sp{^}
+\def\SP{{\tt\char"20 }}  % "visible" space
+\chardef\bs=`\\
+\def\vrt{{\tt\char`\|}}
+ 
+\catcode`\|=\active
+%{\obeylines \gdef|{\ttverbatim \spaceskip\ttglue \let^^M=\  \let|=\endgroup}}
+{\obeylines \gdef\activatettbar{\global\catcode`\|=\active %
+  \gdef|{\ttverbatim \spaceskip\ttglue \xspaceskip\ttglue %
+         \let^^M=\  \let|=\endgroup}}}
+\activatettbar
+ 
+% The active | (which here implements verbatim mode) is redefined in
+% such headers as TABLES.TeX and must be able to be reinstated.
+% \activatettbar been tested with TABLES.TeX, and the two uses are
+% mutually operable (TUGboat 7#2, "Tables in INRSTeX").
