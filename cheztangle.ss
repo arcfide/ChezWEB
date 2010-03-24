@@ -26,7 +26,7 @@
   (syntax-rules ()
     [(_) (begin)]))
 
-(meta trace-define (scrub ids)
+(meta define (scrub ids)
   (define (make-eq id)
     (lambda (x)
       (bound-identifier=? x id)))
@@ -53,7 +53,8 @@
        (lambda (x) 
          (syntax-case x ()
            [(k)
-            (with-syntax ([(imps (... ...)) (scrub #'(c ... e ...))])
+            (with-syntax ([(imps (... ...)) 
+                           (scrub (syntax->list #'(c ... e ...)))])
               (with-implicit (k imps (... ...))
                 #'(module (e ...)
                     (import i ...)
