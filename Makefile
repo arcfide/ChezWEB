@@ -1,4 +1,4 @@
-CSV=/usr/lib/csv7.9.4
+CSV=/usr/lib/csv8.0
 PETITE=/usr/bin/petite
 MACHINE=ta6le
 BIN=/usr/local/bin
