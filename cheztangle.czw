@@ -92,7 +92,8 @@ to evaluate documentation, just expand to the internal expressions."
 (@ "
 The |@*| control code is most the same as the |@| control code in that
 we should just eliminate the documentation and evaluate the meaningful
-subexpressions."
+subexpressions. The differences in |@*| and |@| only occur during
+weaving."
 
 (@c
 (define-syntax @*
