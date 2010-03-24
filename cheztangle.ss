@@ -26,6 +26,17 @@
   (syntax-rules ()
     [(_) (begin)]))
 
+(meta trace-define (scrub ids)
+  (define (make-eq id)
+    (lambda (x)
+      (bound-identifier=? x id)))
+  (do ([ids ids (cdr ids)]
+       [res '()
+         (if (memp (make-eq (car ids)) res)
+             res
+             (cons (car ids) res))])
+      [(null? ids) res]))
+
 (define-syntax @>
   (syntax-rules ()
     [(_ name (i ...) () (c ...) e1 e2 ...)
@@ -42,10 +53,11 @@
        (lambda (x) 
          (syntax-case x ()
            [(k)
-            (with-implicit (k c ... e ...)
-              #'(module (e ...)
-                  (import i ...)
-                  e1 e2 ...))])))]))
+            (with-syntax ([(imps (... ...)) (scrub #'(c ... e ...))])
+              (with-implicit (k imps (... ...))
+                #'(module (e ...)
+                    (import i ...)
+                    e1 e2 ...)))])))]))
 
 (define-syntax @<
   (syntax-rules ()
