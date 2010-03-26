@@ -62,8 +62,10 @@
   \centerline{\bf Library Definition: #2}\medskip
   \noindent #1\par
   \medskip
-  {\noindent\bf Exports:} {\tt #3}\par
-  {\noindent\bf Imports:} {\tt #4}\bigskip}
+  {\raggedright\pretolerance = 10000
+    {\noindent\bf Exports:}
+    {\tt #3}\medskip
+    {\noindent\bf Imports:} {\tt #4}\bigskip}}
 
 \def\endlibrary#1{%
   \medskip\noindent
