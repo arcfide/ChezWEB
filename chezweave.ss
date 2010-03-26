@@ -72,7 +72,7 @@
 
 (define-syntax @<
   (syntax-rules ()
-    [(_ id) (render-@< 'id)]))
+    [(_ id rest ...) (render-@< 'id)]))
 
 (define (render-@< id)
   (make-section-ref (format "\\chunkref{~a}" id)))

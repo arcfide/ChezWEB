@@ -26,35 +26,27 @@
   (syntax-rules ()
     [(_) (begin)]))
 
-(meta define (scrub ids)
-  (define (make-eq id)
-    (lambda (x)
-      (bound-identifier=? x id)))
-  (do ([ids ids (cdr ids)]
-       [res '()
-         (if (memp (make-eq (car ids)) res)
-             res
-             (cons (car ids) res))])
-      [(null? ids) res]))
+(meta define (difference ids todrop)
+  (let ([ids (syntax->list ids)]
+        [todrop (syntax->list todrop)])
+    (remp
+      (lambda (x)
+        (memp (lambda (y) (bound-identifier=? x y)) todrop))
+      ids)))
 
 (define-syntax @>
   (syntax-rules ()
     [(_ name (i ...) () (c ...) e1 e2 ...)
      (define-syntax name
-       (lambda (x)
-         (syntax-case x ()
-           [(k)
-            (with-implicit (k c ...)
-              #'(let ()
-                  (import i ...)
-                  e1 e2 ...))])))]
+       (syntax-rules ()
+         [(k c ...) (let () (import i ...) e1 e2 ...)]))]
     [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
      (define-syntax name
        (lambda (x) 
          (syntax-case x ()
-           [(k)
+           [(k c ...)
             (with-syntax ([(imps (... ...)) 
-                           (scrub (syntax->list #'(c ... e ...)))])
+                           (difference #'(e ...) #'(c ...))])
               (with-implicit (k imps (... ...))
                 #'(module (e ...)
                     (import i ...)
@@ -62,7 +54,7 @@
 
 (define-syntax @<
   (syntax-rules ()
-    [(_ id) (id)]))
+    [(_ id rest ...) (id rest ...)]))
 
 (define-syntax @
   (syntax-rules ()
