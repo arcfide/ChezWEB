@@ -28,33 +28,42 @@
 
 (meta define (difference ids todrop)
   (let ([ids (syntax->list ids)]
-        [todrop (syntax->list todrop)])
+        [todrop (filter identifier? (syntax->list todrop))])
     (remp
       (lambda (x)
         (memp (lambda (y) (bound-identifier=? x y)) todrop))
       ids)))
 
+(meta define (intersect s1 s2)
+  (filter
+    (lambda (x)
+      (memp (lambda (y) (bound-identifier=? x y)) s2))
+    s1))
+
 (define-syntax @>
-  (syntax-rules ()
-    [(_ name (i ...) () (c ...) e1 e2 ...)
-     (define-syntax name
-       (syntax-rules ()
-         [(k c ...) (let () (import i ...) e1 e2 ...)]))]
-    [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
-     (define-syntax name
-       (lambda (x) 
-         (syntax-case x ()
-           [(k c ...)
-            (with-syntax ([(imps (... ...)) 
-                           (difference #'(e ...) #'(c ...))])
-              (with-implicit (k imps (... ...))
-                #'(module (e ...)
-                    (import i ...)
-                    e1 e2 ...)))])))]))
+  (lambda (x)
+    (syntax-case x ()
+      [(_ name (i ...) () (c ...) e1 e2 ...)
+       #'(define-syntax name
+           (syntax-rules ()
+             [(_ k c ...) (let () (import i ...) e1 e2 ...)]))]
+      [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
+       (with-syntax ([(imps ...) (difference #'(e ...) #'(c ...))]
+                     [(ecap ...) (intersect #'(e ...) #'(c ...))])
+         #'(define-syntax name
+             (lambda (x)
+               (syntax-case x ()
+                 [(_ k c ...)
+                  (with-implicit (k imps ...)
+                    #'(module (imps ... ecap ...)
+                        (import i ...) e1 e2 ...))]))))])))
 
 (define-syntax @<
-  (syntax-rules ()
-    [(_ id rest ...) (id rest ...)]))
+  (lambda (x)
+    (syntax-case x ()
+      [(k id rest ...) 
+       (with-implicit (k nk)
+         #'(id nk rest ...))])))
 
 (define-syntax @
   (syntax-rules ()
