@@ -57,15 +57,20 @@
 \def\chunkref#1{%
   $\langle$ #1 $\rangle$}
 
-\def\library#1#2#3#4{%
+\long\def\library#1#2{%
   \vfil\break
   \centerline{\bf Library Definition: #2}\medskip
   \noindent #1\par
-  \medskip
-  {\raggedright\pretolerance = 10000
-    {\noindent\bf Exports:}
-    {\tt #3}\medskip
-    {\noindent\bf Imports:} {\tt #4}\bigskip}}
+  \medskip}
+
+\def\export{%
+  \centerline{\bf Exports}\smallskip
+  \hrule
+  \begingroup\tt}
+\def\endexport{\endgroup\hrule}
+\def\import{%
+\def\endimport{\endgroup}
+  \noindent{\bf Imports:}\par\begingroup\tt}
 
 \def\endlibrary#1{%
   \medskip\noindent

@@ -127,8 +127,18 @@
           (eq? 'export (syntax->datum #'export))
           (eq? 'import (syntax->datum #'import)))
      (format 
-       "\\library{~a}{~a}{~{~a~^ ~}}{~{~a~^ ~}}\n~{~a~}\\endlibrary{~a}\n"
-       doc '(n1 n2 ...) '(e ...) '(i ...)
+       "\\library{~a}{~a}
+        \\export
+        \\makecolumns ~a/~a: ~{~a\n~}\\par
+        \\endexport\\medskip
+        \\import
+        ~{~a\n~}
+        \\endimport\\bigskip
+        ~{~a~}\\endlibrary{~a}\n"
+       doc '(n1 n2 ...) 
+       (length '(e ...)) 2 ; 2 columns in the export table
+       '(e ...) 
+       '(i ...)
        `(,(wrap b1) ,(wrap b2) ...)
        '(n1 n2 ...))]))
 
