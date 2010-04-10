@@ -12,7 +12,7 @@ build: cheztangle.boot chezweave.boot
 package:
 	rm -rf chezweb-${VERSION}
 	mkdir -p chezweb-${VERSION}
-	cp cheztangle.ss chezweave.ss cheztangle.czw chezwebmac.tex \
+	cp cheztangle.ss chezweave.ss chezwebmac.tex \
 	  Makefile README chezweb-${VERSION}
 	tar cv chezweb-${VERSION} | xz -zc > chezweb-${VERSION}.tar.xz
 
