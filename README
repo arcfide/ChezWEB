@@ -108,6 +108,23 @@ Documentation
 Ironically, there is not much documentation available for ChezWEB
 at the moment. I'm working on that. 
 
+Obtaining ChezWEB
+-----------------
+
+The distribution of ChezWEB versions can be found here:
+
+  <gopher://gopher.sacrideo.us/1chezweb>
+
+It is also possible to get the versions via Monotone, as well as the
+latest development branch.
+
+  Server: mtn.sacrideo.us
+  Branch: us.sacrideo.chezweb
+
+Tags are named CHEZWEB_MAJOR_MINOR_PATCH where MAJOR.MINOR.PATCH is
+the version for which you are looking. You can omit the patch version
+when the patch count is zero.
+
 Contact/Support
 ---------------
 
