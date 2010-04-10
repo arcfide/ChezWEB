@@ -67,7 +67,7 @@
 
 (define (render-@> name imports exports captures . code)
   (format
-    "\\chunk{~a}{~{~a~^, ~}}{~{~a~^, ~}}{~{~a~^, ~}}\n~{~a~}\\endchunk\n"
+    "\\chunk{~a}{~{~a~^ ~}}{~{~a~^ ~}}{~{~a~^ ~}}\n~{~a~}\\endchunk\n"
     name imports exports captures (map code->string code)))
 
 (define-syntax @<

@@ -34,17 +34,41 @@
   {\noindent\bf\the\sectc . #2.} }
 \def\endnsect{\medskip}
 
+%% Some uber cool blank testing stuff
+% Usage: \if\blank{#1}...\else...\fi
+
+\catcode`\@=11 % as in plain.tex
+\long\def\blank#1{\bl@nk#1@@..\bl@nk}%
+\long\def\bl@nk#1#2@#3#4\bl@nk{#3#4}
+\catcode`\@=12
+
+\long\def\test#1{\begingroup \toks0{[#1]}%
+  \newlinechar`\/\message{/\the\toks0:
+    \if\blank{#1}EMPTY\else NOT empty\fi%
+    }\endgroup}
+
 % We need to be able to create a verbatim environment that allows
 % macro and commands to be run.
 
 \def\chunk#1#2#3#4{%
   \bgroup
-  %def\chunkimports{#2}
-  %def\chunkexports{#3}
-  %def\chunkcaptures{#4}
+  \long\def\chunkimports{%
+    \if\blank{#2}\else
+      {\it Imports:} {\tt #2}\par\fi}
+  \long\def\chunkexports{%
+    \if\blank{#3}\else
+      {\it Exports:} {\tt #3}\par\fi}
+  \long\def\chunkcaptures{%
+    \if\blank{#4}\else
+      {\it Captures:} {\tt #4}\par\fi}
   \hfil\break$\langle$ #1 $\rangle \equiv$
   \ttverbatim}
-\def\endchunk{\endgroup\egroup}
+\def\endchunk{%
+  {\parindent = 0pt
+    \chunkimports
+    \chunkexports
+    \chunkcaptures}
+  \endgroup\egroup}
 
 \def\code{%
   \bgroup
