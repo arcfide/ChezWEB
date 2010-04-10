@@ -52,6 +52,8 @@
 % We need to be able to create a verbatim environment that allows
 % macro and commands to be run.
 
+\def\chunkxref{}
+
 \def\chunk#1#2#3#4{%
   \bgroup
   \long\def\chunkimports{%
@@ -63,7 +65,8 @@
   \long\def\chunkcaptures{%
     \if\blank{#4}\else
       {\smallit Captures:} {\smalltt #4}\par\fi}
-  \hfil\break$\langle$ #1 $\rangle \equiv$
+  \definexref{#1}{\the\sectc}{chunkxref}
+  \hfil\break$\langle$#1$\rangle \equiv$
   \ttverbatim}
 \def\endchunk{%
   {\parindent = 0pt
@@ -81,7 +84,7 @@
 \def\x#1;{\char"#1 }
 
 \def\chunkref#1{%
-  $\langle$ #1 $\rangle$}
+  $\langle${\rm #1 \refn{#1}}$\rangle$}
 
 \long\def\library#1#2{%
   \vfil\break
