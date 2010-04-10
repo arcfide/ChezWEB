@@ -1,4 +1,1 @@
 * Write a real pretty printer.
-* Enable cross-references.
-* Have the woven output actually display the captures, exports, and
-  imports in some meaningful way.
