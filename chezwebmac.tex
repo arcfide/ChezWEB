@@ -19,6 +19,8 @@
 
 \font\titlef = cmr17
 \font\small = cmr8
+\font\smallit = cmti8
+\font\smalltt = cmtt8
 
 \input eplain
 
@@ -54,13 +56,13 @@
   \bgroup
   \long\def\chunkimports{%
     \if\blank{#2}\else
-      {\it Imports:} {\tt #2}\par\fi}
+      {\smallit Imports:} {\smalltt #2}\par\fi}
   \long\def\chunkexports{%
     \if\blank{#3}\else
-      {\it Exports:} {\tt #3}\par\fi}
+      {\smallit Exports:} {\smalltt #3}\par\fi}
   \long\def\chunkcaptures{%
     \if\blank{#4}\else
-      {\it Captures:} {\tt #4}\par\fi}
+      {\smallit Captures:} {\smalltt #4}\par\fi}
   \hfil\break$\langle$ #1 $\rangle \equiv$
   \ttverbatim}
 \def\endchunk{%
