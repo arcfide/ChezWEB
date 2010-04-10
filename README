@@ -34,7 +34,7 @@ installed.
 System Requirements
 -------------------
 
-ChezWEB requires Chez Scheme 7.9+, as it is built on R6RS.
+ChezWEB requires (Petite) Chez Scheme 8.0, as it is built on R6RS.
 
 What makes ChezWEB unique? Why should I use it?
 -----------------------------------------------
@@ -106,11 +106,7 @@ Documentation
 -------------
 
 Ironically, there is not much documentation available for ChezWEB
-at the moment. I'm working on that. You can get a feel for how it
-is used by taking a look at the sample cheztangle.czw file. It's a
-ChezWEB version of the cheztangle.ss file. Unfortunately, because
-of the way that ChezWEB is written right now, you can't load that
-into the tangle environment. You can weave it though.
+at the moment. I'm working on that. 
 
 Contact/Support
 ---------------
