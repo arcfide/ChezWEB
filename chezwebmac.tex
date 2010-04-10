@@ -26,6 +26,17 @@
 
 \newcount\sectc
 
+\long\def\rendertoc{%
+  \centerline{\bf Contents}\par
+  \begingroup
+    \leftskip = .5in
+    \rightskip = .5in
+    \parindent = 0pt
+    \readtocfile
+    \par
+  \endgroup
+  \bigskip}
+
 \def\sect{%
   \advance\sectc by 1
   {\noindent\bf\the\sectc . }}
@@ -33,8 +44,12 @@
 
 \def\nsect#1#2{%
   \advance\sectc by 1
+  \writenumberedtocentry{section}{#2}{\the\sectc}
   {\noindent\bf\the\sectc . #2.} }
 \def\endnsect{\medskip}
+
+\def\tocsectionentry#1#2#3{%
+  {\sl #1}\hfil \S #2 p. #3\break}
 
 %% Some uber cool blank testing stuff
 % Usage: \if\blank{#1}...\else...\fi
