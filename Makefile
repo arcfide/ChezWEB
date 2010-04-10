@@ -2,7 +2,7 @@ CSV=/usr/lib/csv8.0
 PETITE=/usr/bin/petite
 MACHINE=ta6le
 BIN=/usr/local/bin
-VERSION=0.9
+VERSION=1.0
 TEXMF=/usr/share/texmf-local/tex/chezweb
 
 .SUFFIXES: .boot .ss
