@@ -73,13 +73,13 @@
   \bgroup
   \long\def\chunkimports{%
     \if\blank{#2}\else
-      {\smallit Imports:} {\smalltt #2}\par\fi}
+      {\smallit Imports:} {\smalltt\raggedright #2\par}\fi}
   \long\def\chunkexports{%
     \if\blank{#3}\else
-      {\smallit Exports:} {\smalltt #3}\par\fi}
+      {\smallit Exports:} {\smalltt\raggedright #3\par}\fi}
   \long\def\chunkcaptures{%
     \if\blank{#4}\else
-      {\smallit Captures:} {\smalltt #4}\par\fi}
+      {\smallit Captures:} {\smalltt\raggedright #4\par}\fi}
   \definexref{#1}{\the\sectc}{chunkxref}
   \hfil\break$\langle$#1$\rangle \equiv$
   \ttverbatim}
