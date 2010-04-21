@@ -149,10 +149,11 @@
 (define-syntax module
   (syntax-rules ()
     [(_ (exports ...) b1 b2 ...)
-     (for-all identifier? #'(exports ...))
+     (for-all maybe-list/identifier? #'(exports ...))
      `(module (exports ...) ,(wrap b1) ,(wrap b2) ...)]
     [(_ name (exports ...) b1 b2 ...)
-     (for-all identifier? #'(name exports ...))
+     (and (identifier? #'name)
+          (for-all maybe-list/identifier? #'(exports ...)))
      `(module name (exports ...) ,(wrap b1) ,(wrap b2) ...)]))
     
 (record-writer (record-type-descriptor section-ref) section-ref-writer)
