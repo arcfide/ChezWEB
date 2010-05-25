@@ -127,7 +127,8 @@
           (eq? 'export (syntax->datum #'export))
           (eq? 'import (syntax->datum #'import)))
      (format 
-       "\\library{~a}{~a}
+       "\\library{~a}
+       ~a\\par
         \\export
         \\makecolumns ~a/~a: ~{~a\n~}\\par
         \\endexport\\medskip
@@ -135,7 +136,7 @@
         ~{~a\n~}
         \\endimport\\bigskip
         ~{~a~}\\endlibrary{~a}\n"
-       doc '(n1 n2 ...) 
+       '(n1 n2 ...) doc
        (length '(e ...)) 2 ; 2 columns in the export table
        '(e ...) 
        '(i ...)
