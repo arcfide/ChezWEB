@@ -23,6 +23,9 @@
   (export @chezweb @ @* @> @< @c @l module wrap code->string)
   (import (rename (chezscheme) (module %module)))
 
+(define max-simple-elems (make-parameter 7))
+(define list-columns (make-parameter 3))
+
 (define-syntax define-quoter/except
   (syntax-rules ()
     [(_ wrap n1 n2 ...)
@@ -53,6 +56,11 @@
 
 (define (sanitize/symbol sym)
   (sanitize (symbol->string sym)))
+
+(define (sanitize/symbol-or-pair x)
+  (if (pair? x)
+      (map sanitize/symbol-or-pair x)
+      (sanitize/symbol x)))
 
 (define (sanitize code)
   (let loop ([in (string->list (code->string code))] 
@@ -104,18 +112,25 @@
        (wrap e1) (wrap e2) ...)]))
 
 (define (render-@> name imports exports captures . code)
-  (define (sanitize/symbol-or-pair x)
-    (if (pair? x)
-        (map sanitize/symbol x)
-        (sanitize/symbol x)))
-  (format
-    "\\chunk{~a}{~{~a~^ ~}}{~{~a~^ ~}}{~{~a~^ ~}}{~a}\n~{~a~}\\endchunk\n"
-    (sanitize/symbol name)
-    (map sanitize/symbol-or-pair imports)
-    (map sanitize/symbol-or-pair exports)
-    (map sanitize/symbol captures)
-    (strip-special name)
-    (map code->string code)))
+  (let-values ([(efmt eargs) 
+                (render-list (map sanitize/symbol-or-pair exports))]
+               [(ifmt iargs)
+                (render-list (map sanitize/symbol-or-pair imports))]
+               [(cfmt cargs) (render-list captures)])
+    (format
+      "\\chunk{~a}{~a}
+       ~{~a~}
+       \\chunkinterface
+       ~a ~?
+       ~a ~?
+       ~a ~?
+       \\endchunkinterface
+       \\endchunk\n"
+      (sanitize/symbol name) (strip-special name)
+      (map code->string code)
+      (if (pair? imports) "\\chunkimports" "") ifmt iargs
+      (if (pair? exports) "\\chunkexports" "") efmt eargs
+      (if (pair? captures) "\\chunkcaptures" "") cfmt cargs)))
 
 (define-syntax @<
   (syntax-rules ()
@@ -168,28 +183,44 @@
 (define (render-@c . code)
   (format "\\code\n~{~a~}\\endcode\n" (map code->string code)))
 
+(define (render-list lst)
+  (let ([len (length lst)])
+    (if (> len (max-simple-elems))
+        (render-table lst len)
+        (render-simple-list lst))))
+
+(define (render-table lst len)
+  (values "\n\\makecolumns ~a/~a: ~{~a\n~}\\par"
+    `(,len ,(list-columns) ,lst)))
+
+(define (render-simple-list lst)
+  (values "~{~a ~}\\par" `(,lst)))
+
 (define-syntax @l
   (syntax-rules ()
     [(k doc (n1 n2 ...) (export e ...) (import i ...) b1 b2 ...)
      (and (string? (syntax->datum #'doc))
           (eq? 'export (syntax->datum #'export))
           (eq? 'import (syntax->datum #'import)))
-     (format 
-       "\\library{~a}
-       ~a\\par
-        \\export
-        \\makecolumns ~a/~a: ~{~a\n~}\\par
-        \\endexport\\medskip
-        \\import
-        ~{~a\n~}
-        \\endimport\\bigskip
-        ~{~a~}\\endlibrary{~a}\n"
-       '(n1 n2 ...) doc
-       (length '(e ...)) 2 ; 2 columns in the export table
-       '(e ...) 
-       '(i ...)
-       `(,(wrap b1) ,(wrap b2) ...)
-       '(n1 n2 ...))]))
+     (let-values ([(efmt eargs)
+                   (render-list (map sanitize/symbol '(e ...)))]
+                  [(ifmt iargs) 
+                   (render-list (map sanitize/symbol-or-pair '(i ...)))])
+       (format 
+         "\\library{~a}
+         ~a\\par
+          \\export
+          ~?
+          \\endexport\\medskip
+          \\import
+          ~?
+          \\endimport\\bigskip
+          ~{~a~}\\endlibrary{~a}\n"
+         '(n1 n2 ...) doc
+         efmt eargs
+         ifmt iargs
+         `(,(wrap b1) ,(wrap b2) ...)
+         '(n1 n2 ...)))]))
 
 (define-syntax @chezweb
   (syntax-rules ()

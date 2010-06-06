@@ -69,26 +69,22 @@
 
 \def\chunkxref{}
 
-\def\chunk#1#2#3#4#5{%
+\def\chunk#1#2{%
   \bgroup
-  \long\def\chunkimports{%
-    \if\blank{#2}\else
-      {\smallit Imports:} {\smalltt\raggedright #2\par}\fi}
-  \long\def\chunkexports{%
-    \if\blank{#3}\else
-      {\smallit Exports:} {\smalltt\raggedright #3\par}\fi}
-  \long\def\chunkcaptures{%
-    \if\blank{#4}\else
-      {\smallit Captures:} {\smalltt\raggedright #4\par}\fi}
-  \definexref{#5}{\the\sectc}{chunkxref}
   \hfil\break$\langle$#1$\rangle \equiv$
+  \definexref{#2}{\the\sectc}{chunkxref}  
   \ttverbatim}
+\def\chunkinterface{%
+  \endgroup\begingroup\parindent = 0in\smalltt\raggedright}
+\def\endchunkinterface{\endgroup}
+\def\chunkimports{%
+  \smallskip{\smallit Imports: }}
+\def\chunkexports{%
+  \smallskip{\smallit Exports: }}
+\def\chunkcaptures{%
+  \smallskip{\smallit Captures: }}
 \def\endchunk{%
-  {\parindent = 0pt
-    \chunkimports
-    \chunkexports
-    \chunkcaptures}
-  \endgroup\egroup}
+  \egroup}
 
 \def\code{%
   \bgroup
