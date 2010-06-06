@@ -20,7 +20,7 @@
 
 #!chezscheme
 (library (arcfide chezweb weave)
-  (export @chezweb @ @* @> @< @c @l wrap code->string module)
+  (export @chezweb @ @* @> @< @c @l module wrap code->string)
   (import (rename (chezscheme) (module %module)))
 
 (define-syntax define-quoter/except
@@ -49,7 +49,45 @@
 (define (code->string x)
   (if (string? x)
       x
-      (with-output-to-string (lambda () (pretty-print x)))))
+      (sanitize (with-output-to-string (lambda () (pretty-print x))))))
+
+(define (sanitize/symbol sym)
+  (sanitize (symbol->string sym)))
+
+(define (sanitize code)
+  (let loop ([in (string->list (code->string code))] 
+             [out '()])
+    (case (and (pair? in) (car in))
+      [(#f) (list->string (reverse out))]
+      [(#\% #\$ #\&)
+       (loop (cdr in) (cons* (car in) #\\ out))]
+      [(#\#)
+       (if (char=? #\\ (cadr in))
+           (loop (cddr in)
+                 (append (string->list "$hsalskcab\\$#\\") out))
+           (loop (cdr in) (cons* #\# #\\ out)))]
+      [else (loop (cdr in) (cons (car in) out))])))
+
+(define (strip-special id)
+  (cond
+    [(symbol? id) (strip-special/string (symbol->string id))]
+    [(string? id) (strip-special/string id)]
+    [(number? id) (strip-special/string (number->string id))]
+    [else (error 'strip-special "unknown type for ~s" id)]))
+
+(define (strip-special/string s)
+  (let loop ([cl (string->list s)] [rl '()])
+    (cond
+      [(not (pair? cl)) (list->string (reverse rl))]
+      [(char-alphabetic? (car cl)) (loop (cdr cl) (cons (car cl) rl))]
+      [(char-numeric? (car cl)) (loop (cdr cl) (cons (car cl) rl))]
+      [(memq (car cl) '(#\- #\?)) (loop (cdr cl) (cons (car cl) rl))]
+      [else 
+        (loop (cdr cl) 
+              (append (string->list 
+                        (number->string
+                          (char->integer (car cl)))) 
+                      rl))])))
   
 (meta define (maybe-list/identifier? x)
   (syntax-case x ()
@@ -66,16 +104,26 @@
        (wrap e1) (wrap e2) ...)]))
 
 (define (render-@> name imports exports captures . code)
+  (define (sanitize/symbol-or-pair x)
+    (if (pair? x)
+        (map sanitize/symbol x)
+        (sanitize/symbol x)))
   (format
-    "\\chunk{~a}{~{~a~^ ~}}{~{~a~^ ~}}{~{~a~^ ~}}\n~{~a~}\\endchunk\n"
-    name imports exports captures (map code->string code)))
+    "\\chunk{~a}{~{~a~^ ~}}{~{~a~^ ~}}{~{~a~^ ~}}{~a}\n~{~a~}\\endchunk\n"
+    (sanitize/symbol name)
+    (map sanitize/symbol-or-pair imports)
+    (map sanitize/symbol-or-pair exports)
+    (map sanitize/symbol captures)
+    (strip-special name)
+    (map code->string code)))
 
 (define-syntax @<
   (syntax-rules ()
     [(_ id rest ...) (render-@< 'id)]))
 
 (define (render-@< id)
-  (make-section-ref (format "\\chunkref{~a}" id)))
+  (make-section-ref 
+    (format "\\chunkref{~a}{~a}" id (strip-special id))))
 
 (define-syntax @
   (syntax-rules ()

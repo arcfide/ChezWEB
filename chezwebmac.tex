@@ -69,7 +69,7 @@
 
 \def\chunkxref{}
 
-\def\chunk#1#2#3#4{%
+\def\chunk#1#2#3#4#5{%
   \bgroup
   \long\def\chunkimports{%
     \if\blank{#2}\else
@@ -80,7 +80,7 @@
   \long\def\chunkcaptures{%
     \if\blank{#4}\else
       {\smallit Captures:} {\smalltt\raggedright #4\par}\fi}
-  \definexref{#1}{\the\sectc}{chunkxref}
+  \definexref{#5}{\the\sectc}{chunkxref}
   \hfil\break$\langle$#1$\rangle \equiv$
   \ttverbatim}
 \def\endchunk{%
@@ -98,8 +98,8 @@
 
 \def\x#1;{\char"#1 }
 
-\def\chunkref#1{%
-  $\langle${\rm #1 \refn{#1}}$\rangle$}
+\def\chunkref#1#2{%
+  $\langle${\rm #1 \refn{#2}}$\rangle$}
 
 \long\def\library#1{%
   \vfil\break
@@ -128,9 +128,15 @@
  
 \chardef\other=12
 \def\ttverbatim{\begingroup 
-  \catcode`\&=\other \catcode`\#=\other \catcode`\%=\other
   \catcode`\~=\other \catcode`\_=\other \catcode`\^=\other
-  \catcode`\"=\other \catcode`\$=\other
+  \catcode`\"=\other 
+  \obeyspaces \obeylines \tt}
+  
+\def\ttverbatimplus{%
+  \begingroup
+  \catcode`\&=\other \catcode`\$=\other \catcode`\%=\other
+  \catcode`\~=\other \catcode`\_=\other \catcode`\^=\other
+  \catcode`\"=\other \catcode`\#=\other
   \obeyspaces \obeylines \tt}
  
 \newskip\ttglue
@@ -165,7 +171,7 @@
 \catcode`\|=\active
 %{\obeylines \gdef|{\ttverbatim \spaceskip\ttglue \let^^M=\  \let|=\endgroup}}
 {\obeylines \gdef\activatettbar{\global\catcode`\|=\active %
-  \gdef|{\ttverbatim \spaceskip\ttglue \xspaceskip\ttglue %
+  \gdef|{\ttverbatimplus \spaceskip\ttglue \xspaceskip\ttglue %
          \let^^M=\  \let|=\endgroup}}}
 \activatettbar
  
