@@ -118,8 +118,7 @@
                 (render-list (map sanitize/symbol-or-pair imports))]
                [(cfmt cargs) (render-list captures)])
     (format
-      "\\chunk{~a}{~a}
-       ~{~a~}
+      "\\chunk{~a}{~a}\n~{~a~}
        \\chunkinterface
        ~a ~?
        ~a ~?
