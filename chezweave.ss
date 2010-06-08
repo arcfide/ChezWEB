@@ -20,7 +20,8 @@
 
 #!chezscheme
 (library (arcfide chezweb weave)
-  (export @chezweb @ @* @> @< @<< @c @l module wrap code->string)
+  (export @chezweb @ @* @> @< @<< @c @l module wrap code->string
+          export import capture)
   (import (rename (chezscheme) (module %module)))
 
 (define max-simple-elems (make-parameter 7))
@@ -103,13 +104,38 @@
     [id (identifier? #'id) #t]
     [else #f]))
 
-(define-syntax @>
+(define-syntax %@>
   (syntax-rules ()
     [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
      (and (for-all maybe-list/identifier? #'(i ... e ...))
           (for-all identifier? #'(name c ...)))
      (render-@> 'name '(i ...) '(e ...) '(c ...)
        (wrap e1) (wrap e2) ...)]))
+
+(define-syntax (capture x)
+  (syntax-violation 'capture "misplaced aux keyword" x))
+(define-syntax (export x)
+  (syntax-violation 'export "misplaced aux keyword" x))
+
+(define-syntax (@> x)
+  (define (single-form-check keyword stx subform)
+    (unless (null? (syntax->datum stx))
+      (syntax-violation '@> 
+        (format "more than one ~a form encountered" keyword)
+        x subform)))
+  (syntax-case x (@>-params export import capture)
+    [(_ name (@>-params imps exps caps) (export e ...) e1 e2 ...)
+     (begin (single-form-check 'export #'exps #'(export e ...))
+       #'(@> name (@>-params imps (e ...) caps) e1 e2 ...))]
+    [(_ name (@>-params imps exps caps) (import i ...) e1 e2 ...)
+     (begin (single-form-check 'import #'imps #'(import i ...))
+       #'(@> name (@>-params (i ...) exps caps) e1 e2 ...))]
+    [(_ name (@>-params imps exps caps) (capture c ...) e1 e2 ...)
+     (begin (single-form-check 'capture #'caps #'(capture c ...))
+       #'(@> name (@>-params imps exps (c ...)) e1 e2 ...))]
+    [(_ name (@>-params imps exps caps) e1 e2 ...)
+     #'(%@> name imps exps caps e1 e2 ...)]
+    [(_ name e1 e2 ...) #'(@> name (@>-params () () ()) e1 e2 ...)]))
 
 (define (render-@> name imports exports captures . code)
   (let-values ([(efmt eargs) 
