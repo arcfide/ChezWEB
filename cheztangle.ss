@@ -19,7 +19,7 @@
 ;;; PERFORMANCE OF THIS SOFTWARE.
 
 (library (arcfide chezweb tangle)
-  (export @chezweb @> @* @< @<< @ @c @l)
+  (export @chezweb @> @* @< @<< @ @c @l export import capture)
   (import (chezscheme))
 
 (define-syntax @chezweb
@@ -56,7 +56,7 @@
          (cons #'id (intersect #'(more ...) s2))
          (intersect #'(more ...) s2))]))
 
-(define-syntax @>
+(define-syntax %@>
   (lambda (x)
     (syntax-case x ()
       [(_ name (i ...) () (c ...) e1 e2 ...)
@@ -75,6 +75,33 @@
                       #'(module (imps ... ecap ...)
                           (import i ...) e1 e2 ...))])))))])))
 
+(define @>-params)
+
+(define-syntax (capture x)
+  (syntax-violation 'capture "misplaced aux keyword" x))
+(define-syntax (export x)
+  (syntax-violation 'export "misplaced aux keyword" x))
+
+(define-syntax (@> x)
+  (define (single-form-check keyword stx subform)
+    (unless (null? (syntax->datum stx))
+      (syntax-violation '@> 
+        (format "more than one ~a form encountered" keyword)
+        x subform)))
+  (syntax-case x (@>-params export import capture)
+    [(_ name (@>-params imps exps caps) (export e ...) e1 e2 ...)
+     (begin (single-form-check 'export #'exps #'(export e ...))
+       #'(@> name (@>-params imps (e ...) caps) e1 e2 ...))]
+    [(_ name (@>-params imps exps caps) (import i ...) e1 e2 ...)
+     (begin (single-form-check 'import #'imps #'(import i ...))
+       #'(@> name (@>-params (i ...) exps caps) e1 e2 ...))]
+    [(_ name (@>-params imps exps caps) (capture c ...) e1 e2 ...)
+     (begin (single-form-check 'capture #'caps #'(capture c ...))
+       #'(@> name (@>-params imps exps (c ...)) e1 e2 ...))]
+    [(_ name (@>-params imps exps caps) e1 e2 ...)
+     #'(%@> name imps exps caps e1 e2 ...)]
+    [(_ name e1 e2 ...) #'(@> name (@>-params () () ()) e1 e2 ...)]))
+    
 (define-syntax @<
   (lambda (x)
     (syntax-case x ()
