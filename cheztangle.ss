@@ -19,18 +19,18 @@
 ;;; PERFORMANCE OF THIS SOFTWARE.
 
 (library (arcfide chezweb tangle)
-  (export @chezweb @> @* @< @ @c @l)
+  (export @chezweb @> @* @< @<< @ @c @l)
   (import (chezscheme))
 
 (define-syntax @chezweb
   (syntax-rules ()
     [(_) (begin)]))
 
-(meta define (exported-ids ids)
+(meta define (export-ids ids)
   (syntax-case ids ()
     [() '()]
-    [((id rest ...) more ...) (cons #'id (exported-ids #'(more ...)))]
-    [(id more ...) (cons #'id (exported-ids #'(more ...)))]))
+    [((id rest ...) more ...) (cons #'id (export-ids #'(more ...)))]
+    [(id more ...) (cons #'id (export-ids #'(more ...)))]))
 
 (meta define (difference ids todrop)
   (syntax-case ids ()
@@ -66,25 +66,24 @@
       [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
        (with-syntax ([(imps ...) (difference #'(e ...) #'(c ...))]
                      [(ecap ...) (intersect #'(e ...) #'(c ...))])
-         (with-syntax ([(wrap ...) (exported-ids #'(imps ...))])
+         (with-syntax ([(imp-id ...) (export-ids #'(imps ...))])
            #'(define-syntax name
                (lambda (x)
                  (syntax-case x ()
                    [(_ k c ...)
-                    (with-syntax ([(kimps (... ...))
-                                   (with-implicit (k wrap ...)
-                                     #'(imps ...))]
-                                  [(nimps (... ...)) #'(imps ...)])
-                    #'(module (kimps (... ...) ecap ...)
-                        (module (nimps (... ...) ecap ...)
-                          (import i ...) e1 e2 ...)
-                        (define kimps nimps) (... ...)))])))))])))
+                    (with-implicit (k imp-id ...)
+                      #'(module (imps ... ecap ...)
+                          (import i ...) e1 e2 ...))])))))])))
 
 (define-syntax @<
   (lambda (x)
     (syntax-case x ()
-      [(k id rest ...)
-       (with-implicit (k nk) #'(id nk rest ...))])))
+      [(k id rest ...) #'(id k rest ...)])))
+
+(define-syntax @<<
+  (lambda (x)
+    (syntax-case x ()
+      [(_ id k rest ...) #'(id k rest ...)])))
 
 (define-syntax @
   (syntax-rules ()

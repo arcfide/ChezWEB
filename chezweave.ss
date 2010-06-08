@@ -20,7 +20,7 @@
 
 #!chezscheme
 (library (arcfide chezweb weave)
-  (export @chezweb @ @* @> @< @c @l module wrap code->string)
+  (export @chezweb @ @* @> @< @<< @c @l module wrap code->string)
   (import (rename (chezscheme) (module %module)))
 
 (define max-simple-elems (make-parameter 7))
@@ -42,7 +42,7 @@
          [(_ other)
           (quote other)]))]))
 
-(define-quoter/except wrap @chezweb @ @* @> @< @p @c @l module)
+(define-quoter/except wrap @chezweb @ @* @> @< @<< @p @c @l module)
 
 (define-record-type section-ref (fields name))
 
@@ -134,6 +134,10 @@
 (define-syntax @<
   (syntax-rules ()
     [(_ id rest ...) (render-@< 'id)]))
+
+(define-syntax @<<
+  (syntax-rules ()
+    [(_ id k rest ...) (render-@< 'id)]))
 
 (define (render-@< id)
   (make-section-ref 
