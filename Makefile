@@ -1,10 +1,10 @@
-PREFIX=/usr/local
+PREFIX=/usr
 CSV=${PREFIX}/lib/csv8.0
 PETITE=${PREFIX}/bin/petite
 MACHINE=ta6le
 BIN=/usr/local/bin
 VERSION=1.1
-TEXMF=/usr/local/share/texmf/tex/chezweb
+TEXMF=/usr/share/texmf-local/tex/chezweb
 
 .SUFFIXES: .boot .ss
 
@@ -16,7 +16,7 @@ package:
 	cp cheztangle.ss chezweave.ss chezwebmac.tex \
 	  Makefile README chezweb-${VERSION}
 	tar cvf chezweb-${VERSION}.tar chezweb-${VERSION}
-	lzma -k chezweb-${VERSION}.tar
+	xz -zk chezweb-${VERSION}.tar
 	gzip chezweb-${VERSION}.tar
 
 bin-package: cheztangle.boot chezweave.boot
@@ -24,7 +24,7 @@ bin-package: cheztangle.boot chezweave.boot
 	mkdir -p chezweb-${VERSION}-${MACHINE}
 	cp cheztangle.boot chezweave.boot chezweb-${VERSION}-${MACHINE}
 	tar cvf chezweb-${VERSION}-${MACHINE}.tar chezweb-${VERSION}-${MACHINE}
-	lzma -k chezweb-${VERSION}-${MACHINE}.tar
+	xz -zk chezweb-${VERSION}-${MACHINE}.tar
 	gzip chezweb-${VERSION}-${MACHINE}.tar
 
 clean:
