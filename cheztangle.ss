@@ -66,12 +66,13 @@
       [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
        (with-syntax ([(imps ...) (difference #'(e ...) #'(c ...))]
                      [(ecap ...) (intersect #'(e ...) #'(c ...))])
-         (with-syntax ([(imp-id ...) (export-ids #'(imps ...))])
+         (with-syntax ([(imp-id ...) (export-ids #'(imps ...))]
+                       [@<< (datum->syntax #'name '@<<)])
            #'(define-syntax name
                (lambda (x)
                  (syntax-case x ()
                    [(_ k c ...)
-                    (with-implicit (k imp-id ...)
+                    (with-implicit (k @<< imp-id ...)
                       #'(module (imps ... ecap ...)
                           (import i ...) e1 e2 ...))])))))])))
 
@@ -110,7 +111,7 @@
 (define-syntax @<<
   (lambda (x)
     (syntax-case x ()
-      [(_ id k rest ...) #'(id k rest ...)])))
+      [(k id rest ...) #'(id k rest ...)])))
 
 (define-syntax @
   (syntax-rules ()

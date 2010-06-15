@@ -102,12 +102,10 @@
   \centerline{\bf Library Definition: #1}\medskip}
 
 \def\export{%
-  \centerline{\bf Exports}\smallskip
-  \hrule
-  \begingroup\tt}
-\def\endexport{\endgroup\hrule}
+  \def\endexport{\endgroup}
+  \noindent{\bf Exports:}\par\begingroup\tt}
 \def\import{%
-\def\endimport{\endgroup}
+  \def\endimport{\endgroup}
   \noindent{\bf Imports:}\par\begingroup\tt}
 
 \def\endlibrary#1{%

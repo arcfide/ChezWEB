@@ -163,7 +163,7 @@
 
 (define-syntax @<<
   (syntax-rules ()
-    [(_ id k rest ...) (render-@< 'id)]))
+    [(k id rest ...) (render-@< 'id)]))
 
 (define (render-@< id)
   (make-section-ref 
