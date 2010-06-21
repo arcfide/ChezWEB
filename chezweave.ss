@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Weaving support for ChezWEB
-;;; Version: 1.0
+;;; Version: 1.1
 ;;; 
 ;;; Copyright (c) 2010 Aaron W. Hsu <arcfide@sacrideo.us>
 ;;; 
@@ -21,6 +21,8 @@
 #!chezscheme
 (library (arcfide chezweb weave)
   (export @chezweb @ @* @> @< @<< @c @l module wrap code->string
+          @section @section/header @define-chunk @chunk-ref
+          @chunk-ref/thread @code @library
           export import capture)
   (import (rename (chezscheme) (module %module)))
 
@@ -43,7 +45,28 @@
          [(_ other)
           (quote other)]))]))
 
-(define-quoter/except wrap @chezweb @ @* @> @< @<< @p @c @l module)
+(define-quoter/except wrap 
+  @chezweb @ @* @> @< @<< @p @c @l 
+  @section @section/header @define-chunk @chunk-ref
+  @chunk-ref/thread @code @library
+  module)
+
+(define-syntax define-syntax-alias
+  (syntax-rules ()
+    [(_ new old)
+     (define-syntax (new x)
+       (syntax-case x ()
+         [(k . rest)
+          (with-implicit (k old)
+            #'(old . rest))]))]))
+
+(define-syntax-alias @section @)
+(define-syntax-alias @section/header @*)
+(define-syntax-alias @define-chunk @>)
+(define-syntax-alias @chunk-ref @<)
+(define-syntax-alias @chunk-ref/thread @<<)
+(define-syntax-alias @code @c)
+(define-syntax-alias @library @l)
 
 (define-record-type section-ref (fields name))
 
