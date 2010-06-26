@@ -29,7 +29,8 @@ bin-package: cheztangle.boot chezweave.boot
 	gzip -f chezweb-${VERSION}-${MACHINE}.tar
 
 clean:
-	rm -rf chezweb-${VERSION} chezweb-${VERSION}.tar.lzma
+	rm -rf chezweb-${VERSION} chezweb-${VERSION}.tar.{xz,gz}
+	rm -rf chezweb-${VERSION}-${MACHINE} chezweb-${VERSION}-${MACHINE}.tar.{xz,gz}
 	rm -rf cheztangle.boot chezweave.boot
 
 install: build
