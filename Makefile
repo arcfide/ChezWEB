@@ -22,7 +22,7 @@ package:
 bin-package: cheztangle.boot chezweave.boot
 	rm -rf chezweb-${VERSION}-${MACHINE}
 	mkdir -p chezweb-${VERSION}-${MACHINE}
-	cp cheztangle.boot chezweave.boot chezwebmac.tex \
+	cp cheztangle.boot chezweave.boot chezwebmac.tex README \
           chezweb-${VERSION}-${MACHINE}
 	tar cvf chezweb-${VERSION}-${MACHINE}.tar chezweb-${VERSION}-${MACHINE}
 	xz -zfk chezweb-${VERSION}-${MACHINE}.tar

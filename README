@@ -31,6 +31,9 @@ correctly.
 The makefile assumes that you already have a version of Chez Scheme
 installed.
 
+Installing ChezWEB (The Gory Details)
+-------------------------------------
+
 A more complete installation line might look like this:
 
   $ make install CSV=~/chezheap \
