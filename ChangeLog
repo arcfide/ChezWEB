@@ -1,0 +1,42 @@
+Changes from 1.0 to 1.1:
+
+  The makefile package target now overwrites any tarballs that already
+  exist.
+
+  The Makefile now does a better job of cleaning the directory.
+
+  The makefile is now included in binary packages.
+
+  The README file is now included in binary packages and has been
+  altered some.
+  
+  The chezwebmac.tex file is now included in binary packages.
+
+  Greatly improved control over how and where exports are visible. There
+  are now two control codes for inserting a chunk: @< and @<<. The @<
+  inserts the chunk only into the current scope and does not allow them
+  to escape, whereas the @<< wraps the exports at the call site where
+  the enclosing @> is called.
+
+  Library exports now have a greatly improved formatting.
+  
+  You now specify imports, exports, and captures through named options
+  at the beginning of a chunk, and all of them are optional. That is,
+  rather than doing something like this:
+  
+    (@> Blah () (a b) () (define a #t) (define b #f))
+  
+  You would now do something like this:
+  
+    (@> Blah (export a b) (define a #t) (define b #f))
+
+  There have been many little formatting improvements in the TeX macros.
+  The macros are now more robust, but not perfect.
+
+  The exports and imports and, in fact, any long list controlled by
+  ChezWEAVE will now dynamically switch from a ragged paragraph to a
+  table format if there are too many elements. 
+
+  The library handling is now more robust.
+
+  The weaving of modules can now handle a more complete module syntax.
