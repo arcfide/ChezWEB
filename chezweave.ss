@@ -26,8 +26,14 @@
           export import capture)
   (import (rename (chezscheme) (module %module)))
 
-(define max-simple-elems (make-parameter 7))
-(define list-columns (make-parameter 3))
+(define max-simple-elems 
+  (make-parameter
+    (let ([max-env (getenv "CHEZWEBMAXELEMS")])
+      (or (string->number max-env) 7))))
+(define list-columns 
+  (make-parameter
+    (let ([cols (getenv "CHEZWEBLISTCOLUMNS")])
+      (or (string->number cols) 3))))
 
 (define-syntax define-quoter/except
   (syntax-rules ()
