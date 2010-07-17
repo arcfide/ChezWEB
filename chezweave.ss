@@ -29,11 +29,11 @@
 (define max-simple-elems 
   (make-parameter
     (let ([max-env (getenv "CHEZWEBMAXELEMS")])
-      (or (string->number max-env) 7))))
+      (or (and max-env (string->number max-env)) 7))))
 (define list-columns 
   (make-parameter
     (let ([cols (getenv "CHEZWEBLISTCOLUMNS")])
-      (or (string->number cols) 3))))
+      (or (and cols (string->number cols)) 3))))
 
 (define-syntax define-quoter/except
   (syntax-rules ()
@@ -133,10 +133,17 @@
     [id (identifier? #'id) #t]
     [else #f]))
 
+(meta define (maybe-tree/identifier? x)
+  (syntax-case x ()
+    [(id ...) (for-all maybe-tree/identifier? #'(id ...)) #t]
+    [id (identifier? #'id) #t]
+    [else #f]))
+
 (define-syntax %@>
   (syntax-rules ()
     [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
-     (and (for-all maybe-list/identifier? #'(i ... e ...))
+     (and (for-all maybe-tree/identifier? #'(i ...))
+          (for-all maybe-list/identifier? #'(e ...))
           (for-all identifier? #'(name c ...)))
      (render-@> 'name '(i ...) '(e ...) '(c ...)
        (wrap e1) (wrap e2) ...)]))
