@@ -75,6 +75,16 @@
      (if (memp (lambda (y) (bound-identifier=? #'id y)) s2)
          (cons #'id (intersect #'(more ...) s2))
          (intersect #'(more ...) s2))]))
+	 
+(meta trace-define (rewrap-@<< k x)
+  (syntax-case x ()
+    [(head . tail)
+     (cons (rewrap-@<< k #'head)
+           (rewrap-@<< k #'tail))]
+    [id (and (identifier? #'id) 
+             (bound-identifier=? #'id #'@<<))
+     (datum->syntax k '@<<)]
+    [other #'other]))
 
 (define-syntax %@>
   (lambda (x)
@@ -86,15 +96,15 @@
       [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
        (with-syntax ([(imps ...) (difference #'(e ...) #'(c ...))]
                      [(ecap ...) (intersect #'(e ...) #'(c ...))])
-         (with-syntax ([(imp-id ...) (export-ids #'(imps ...))]
-                       [@<< (datum->syntax #'name '@<<)])
+         (with-syntax ([(imp-id ...) (export-ids #'(imps ...))])
            #'(define-syntax name
                (lambda (x)
                  (syntax-case x ()
                    [(_ k c ...)
-                    (with-implicit (k @<< imp-id ...)
-                      #'(module (imps ... ecap ...)
-                          (import i ...) e1 e2 ...))])))))])))
+                    (with-implicit (k imp-id ...)
+		      (rewrap-@<< #'k
+                        #'(module (imps ... ecap ...)
+                            (import i ...) e1 e2 ...)))])))))])))
 
 (define @>-params)
 
