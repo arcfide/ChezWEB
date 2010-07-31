@@ -76,7 +76,7 @@
          (cons #'id (intersect #'(more ...) s2))
          (intersect #'(more ...) s2))]))
 	 
-(meta trace-define (rewrap-@<< k x)
+(meta define (rewrap-@<< k x)
   (syntax-case x ()
     [(head . tail)
      (cons (rewrap-@<< k #'head)
