@@ -255,7 +255,13 @@ for generating or ``weaving'' the program into a printable,
 human-readable format.
 
 \heading{Structure of a ChezWEB program}%
-Every ChezWEB program is composed of a series of sections. These sections are groups of documentation and code chunks. When dealing with R6RS Libraries, a set of sections may be encased in a ChezWEB library directive, which documents the actual library form. There are three groups of ChezWEB forms: documentation forms, code forms, and other miscellaneous forms that may involve documentation and code. The typical ChezWEB library might look something like this:
+Every ChezWEB program is composed of a series of sections.  These
+sections are groups of documentation and code chunks.  When dealing
+with R6RS Libraries, a set of sections may be encased in a ChezWEB
+library directive, which documents the actual library form.  There are
+three groups of ChezWEB forms: documentation forms, code forms, and
+other miscellaneous forms that may involve documentation and code.
+The typical ChezWEB library might look something like this:
 
 \medskip\verbatim
 (@chezweb)
@@ -273,17 +279,28 @@ Every ChezWEB program is composed of a series of sections. These sections are gr
 \medskip
 
 \noindent
-The \verbatim export-spec|endverbatim and \verbatim import-spec|endverbatim forms are the same as the R6RS import and export forms. \verbatim Sections|endverbatim are any valid ChezWEB section. 
+The 
+\verbatim export-spec|endverbatim 
+and 
+\verbatim import-spec|endverbatim 
+forms are the same as the R6RS import and
+export forms.  
+\verbatim Sections|endverbatim 
+are any valid ChezWEB
+section.  The 
+\verbatim @chezweb|endverbatim 
+form should be at the top
+of every ChezWEB program.
 
 To summarize the forms in ChezWEB, here is a list:
 
 \medskip
-\itemitem{Code}
-\verbatim @c @> @< @<< |endverbatim
-\itemitem{Doc.}
-\verbatim @ @* |endverbatim
 \itemitem{Misc.}
 \verbatim @l @chezweb |endverbatim
+\itemitem{Doc.}
+\verbatim @ @* |endverbatim
+\itemitem{Code}
+\verbatim @c @> @< @<< |endverbatim
 \medskip
 
 \noindent
