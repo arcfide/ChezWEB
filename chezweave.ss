@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Weaving support for ChezWEB
-;;; Version: 1.1
+;;; Version: 1.2
 ;;; 
 ;;; Copyright (c) 2010 Aaron W. Hsu <arcfide@sacrideo.us>
 ;;; 
