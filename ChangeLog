@@ -1,3 +1,21 @@
+Changes from 1.1 to 1.2:
+
+  Enable environment variables CHEZWEBMAXELEMS and CHEZWEBLISTCOLUMNS
+  to control the limits of the simple elemtsn and number of columns
+  that are generate for output in ChezWEB.  This tells the weave
+  program when it should go from simple listings to columns of
+  listings for exports and such.
+
+  Various reliability improvements have been introduced, including
+  fixes to the TeX file and the way that we output the TeX, which
+  enables a greater range of characters in the source code.
+
+  @<< and @chunk-ref/thread have been fixed so that threading will
+  occur even in cases where there is a bunch of nesting.
+
+  A manual has been created for ChezWEB, and we now ship with the TeX
+  file available for users.
+
 Changes from 1.0 to 1.1:
 
   You can now use long names for the control codes rather than just the
