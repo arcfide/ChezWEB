@@ -57,8 +57,8 @@ please take some time understanding the principles and motivations of
 Literate Programming; by doing so, you will likely understand ChezWEB
 better, and will make better use of its capabilities.
 
-Firstly, Literate Programming is, in some sense, a way to document
-your programs.  But true Literate Programming doesn't just encompass
+In some sense, Literate Programming is a way to document
+your programs, but true Literate Programming doesn't just encompass
 the documentation aspects of programming.  Rather Literate Programming
 is an approach both to writing code, as well as to writing
 documentation.  The reader may have already encountered documentation
@@ -98,7 +98,7 @@ In essence, Literate Programming systems provide you the means of
 constructing programs in a human readable, rather than computer
 readable fashion, and to optimize them for such display.
 
-In traditional WEB systems, this is accomplished by two programs, a
+Traditional WEB systems accomplish this using two programs, a
 weaving program, and a tangling program.  Each program accepts a
 document constructed of a series of sections, which have code and text
 in them, and organizes them so that either the human or the computer
@@ -132,10 +132,10 @@ Literate Programming in its rightful place.  It is one of many tools
 that exist to improve the quality of a piece of software.
 
 \heading{Scheme and Traditional Literate Programming}%
-Let's take a quick moment to discuss the Scheme programming language
-and combining it together with traditiona Literate Programming
-systems.  Generally speaking, there are two sorts of Literate
-Programming systems which fall under the traditional categorization.
+First, let's discuss the Scheme in the context of traditional Literate
+Programming tools Generally, two sorts of Literate
+Programming systems exist.  These fall under the traditional
+categorization.
 Programs like CWEB and WEB, which Knuth uses, are tightly integrated
 into the programmling language around which they work.  They are also
 tied rather directly to the documentation language that they use.
@@ -198,12 +198,12 @@ reference a chunk of code somewhere, it really is just like you had
 copied and pasted it directly in there, before loading the program.
 If you define something in one chunk, and then reference that chunk in
 some other, the definitions will get scoped where they were
-referenced, and will capture or shadow any bindings accordingly.  This
-differs rather significantly from Scheme macros, which preserve
+referenced, and will capture or shadow any bindings accordingly.
+Scheme macros differ significantly from this model, which preserve
 hygiene by default.  So, if we think of Literate Programming as an
-extra macro system on top of Scheme, you're wrapping a rather
-sophisticated fully general macro language in Scheme with a completely
-unhygienic system.
+extra macro system on top of Scheme, do you really want to wrap the
+sophisticated Scheme macro system with a rather na\"\i ve unhygienic
+one?
 
 There is nothing wrong with traditional Literate Programming, but when
 I write in Scheme, I want more.  Thus, I wrote ChezWEB.
@@ -229,8 +229,8 @@ fact, it is implemented as a couple of libraries, one that provides
 documentation support, and the other that provides the language
 support for executing ChezWEB programs.  The forms defined by the
 ChezWEB system are just normal Scheme forms, implemented as macros.
-This means that you get all the advantages of Scheme when using
-ChezWEB.  ChezWEB knows about things like hygiene and modules and it
+Thus, you get all the advantages of Scheme when using
+ChezWEB.  ChezWEB understands hygiene and modules and it
 also understands the workflow of most Schemers.
 
 Most Schemers do not follow an edit-build-run-debug workflow.  This
@@ -258,8 +258,8 @@ human-readable format.
 Every ChezWEB program is composed of a series of sections.  These
 sections are groups of documentation and code chunks.  When dealing
 with R6RS Libraries, a set of sections may be encased in a ChezWEB
-library directive, which documents the actual library form.  There are
-three groups of ChezWEB forms: documentation forms, code forms, and
+library directive, which documents the actual library form.  ChezWEB
+has three types of forms: documentation forms, code forms, and
 other miscellaneous forms that may involve documentation and code.
 The typical ChezWEB library might look something like this:
 
@@ -280,10 +280,10 @@ The typical ChezWEB library might look something like this:
 
 \noindent
 The 
-\verbatim export-spec|endverbatim 
+\verbatim export|endverbatim 
 and 
-\verbatim import-spec|endverbatim 
-forms are the same as the R6RS import and
+\verbatim import|endverbatim 
+specifications are the same as the R6RS import and
 export forms.  
 \verbatim Sections|endverbatim 
 are any valid ChezWEB
@@ -304,6 +304,327 @@ To summarize the forms in ChezWEB, here is a list:
 \medskip
 
 \noindent
+In the next three sections I will detail the operation of each of
+these forms.  Firstly, though, I would like to give the basic
+structure of a section.  Normally, a section will consist of one
+documentation form encapsulating one code form.  This is the way that
+Chez WEB is designed to work, but there are other ways that you can do
+things and still get decent results.  ChezWEB was organized in this
+way primarily for providing good printed out put, even though the code
+side of the system is more flexible than that.  I have not developed
+an useful way of thinking about these forms when they are deeply
+nested, at least, not when it comes to formatting it into something
+pretty.
 
+\heading{Documentation Forms}%
+The documentation forms are in charge of capturing and formatting the
+documentation parts of the WEB program.  Primarily, they are ways of
+connecting strings, which form elements of the documentation, with
+code for formatting and indexing.  An example of the most basic
+documentation form is the {\tt @} sign.
+
+\verbatimescapechar \#
+\medskip\verbatim
+(@
+"This is a procedure called |loop|
+without $\lambda$."
+
+(@c
+(define (loop) (loop))
+))
+#endverbatim
+\medskip
+
+\verbatimescapechar |
+
+\noindent
+The above will eventually form a numbered section with ``This is a
+procedure'' as its text and the code below as its code.  For example,
+if it is the third section in a WEB document, you may get something
+like this:
+
+\bigskip\hrule\smallskip
+{\narrower \noindent {\bf 3.} This is a procedure called {\tt loop}
+without $\lambda$.\par
+\noindent $<*>\equiv$\par
+\verbatim
+(define (loop)
+  (loop))
+|endverbatim
+\smallskip\hrule\bigskip}
+
+\noindent
+The $<*>\equiv$ is the way that ChezWEB marks out top-level code
+elements.  See the documentation of the code forms below for more
+information.  For every section, ChezWEB prints a running number that
+indicates the number of the section.  This is used when referring to
+that section in the index or the table of contents.  Notice also that
+the documentation strings, such as that used above is just a normal
+string of \TeX\ code.  Actually, it's eplain Plain \TeX\ combined with
+a special form for the vertical bar, which let's you quote things
+inline using the vertical bar.  This makes it more convenient to talk
+about various types that you want to verbatim or list inline without
+having to use your own custom verbatim environment.
+
+The actual format of the {\tt @} form is as follows:
+
+\medskip\verbatim
+(@ doc-string code-chunk ...)
+|endverbatim
+\medskip
+
+\noindent
+It is not always necessary to use code chunks in any one given
+documentation chunk, so you may choose to not put any chunks in the
+documentation; only the documentation string is required.
+
+The {\tt @*} form is much like the {\tt @} form, but it indicates the
+beginning of a named section.  The form is as follows:
+
+\medskip\verbatim
+(@* head-string doc-string 
+  code-chunk ...)
+|endverbatim
+\medskip
+
+\noindent
+The {\tt head-string} consist of a string that will be used as the
+title of the section, typeset in a bold font.  The {\tt doc-string} is
+the same as with the {\tt @} form.  The above form is currently the
+only supported form, but additional forms should be supported in newer
+versions of ChezWEB.
+
+\heading{Code Forms}%
+There are four code forms.  The simplest form, {\tt @c}, is
+essentially a special form of the Scheme {\tt begin} form.  Generally
+speaking, you would use {\tt @c} whenever you want to put code at the
+top-level.  There is no indirection or copying that goes on here.
+It's just inserting the code directly as it is shown into the code.
+For programs that are fairly simple, and which can be appropriate
+organized at the procedure level, using {\tt @c} usually suffices.
+
+Whenever you have programs with complicated internals that deserve
+their own separate section, or if you have additional reorganization
+that you want to make which Scheme doesn't support, which is usually
+in the form of lifting code or syntax out to the top-level for
+exposition, you will want to define named code chunks that can be used
+or inserted into other code.  The {\tt @>} form defines a chunk.  It
+has the following syntax:
+
+\medskip\verbatim
+(@> id-name id-spec exp ...)
+|endverbatim
+\medskip
+
+\noindent
+The {\tt id-spec} forms are a set of specifications where each is of
+one of the following forms:
+
+\medskip\verbatim
+(export id ...)
+(import imp-spec ...)
+(capture id ...)
+|endverbatim
+
+\noindent You can only have one of the above forms per defined chunk,
+so a named code chunk will have at most three binding specifiers.
+They may be specified in any order, and any one of them may be
+omitted.  The {\tt import} form works just like the normal Chez Scheme
+{\tt import} form.  The {\tt export} form controls what bindings are
+visible outside of the scope of the code chunk whenever that code
+chunk is used.  The {\tt capture} form specifies what identifiers
+should be visible from the call site context whenever the code chunk
+is used.  The {\tt export} form takes the normal form of the Chez {\tt
+module} form.
+
+As an example, imagine we wish to write a program that
+discusses some internal definition, and then uses that definition
+inside of some {\tt let} expression.  We may want to lift the internal
+definition to the top-level and provide some key exposition on how it
+works or why it exists.  It wouldn't look very nice if we just did
+this with a comment inside of the actual {\tt let} expression, and
+with ChezWEB, we don't have to do this.  Instead, we can do something
+like the following ChezWEB program:
+
+\verbatimescapechar \#
+\medskip\verbatim
+(@chezweb)
+
+(@ "This is our internal procedure."
+
+(@> |Define internal proc|
+(export do-something)
+(capture x)
+(define (do-something)
+  (display x)
+  (newline))
+))
+
+(@ "Here's our |let|."
+
+(@c
+(let ([x 5])
+  (@< |Define internal proc| x)
+  (do-something))
+))
+#endverbatim
+\medskip\verbatimescapechar |
+
+\noindent The output of this program if we were to load it with the
+Tangle environment, or using the |cheztangle| program would be
+something like this:
+
+\medskip\verbatim
+$ cheztangle -q foo.w
+5
+>
+|endverbatim
+\medskip
+
+\noindent
+Now, if we were to weave this program, we would get something like
+this:
+
+\bigskip\hrule\smallskip
+{\narrower\noindent{\bf 1.} This is our internal procedure.\par
+\noindent $\langle$Define internal proc$\rangle\equiv$\par
+\verbatim
+(define (do-something)
+  (display x)
+  (newline))
+|endverbatim
+\medskip
+\noindent{\it Exports:} {\tt do-something}\par
+\noindent {\it Captures:} {\tt x}\medskip
+{\noindent\bf 2.} Here's our {\tt let}.\par
+\noindent $\langle *\rangle\equiv$\par
+\verbatim
+(let ([x 5])
+  |endverbatim $\langle$Define internal proc 1$\rangle$\par\verbatim
+  (do-something))
+|endverbatim
+\smallskip
+\hrule
+\bigskip}
+
+\noindent
+Notice that when we define a named chunk, we also can see what
+exports, captures, and imports that we have.  When we use a named
+chunk, we will get told where to find the definition of that chunk.
+
+As you may have guessed from the above example, captures are taken
+from the call site, but these are threaded explicitly through to the
+named chunk.  The chunks are completely hygienic, meaning that
+bindings do not spill out of the chunk when they are not exported, and
+chunks are referentially transparent, meaning that they do not capture
+identifiers at their call site unless they are given them in the form
+of captures.
+
+You may also have deduced the behavior of {\tt @<}, but you should be
+careful there.  There are two forms which insert named code chunks
+into various places.  They are exactly the same, but for the way that
+they thread the exports of a named chunk.  With {\tt @<}, no explicit
+threading is performed, and identifiers are inserted directly into the
+scope of the chunk in which the {\tt @<} form occurs.  This has
+important ramifications for named code chunks that have occurances of
+{\tt @<} in them, since any bindings exported by that reference will
+only be visible inside the named code chunk.  This is similar to the
+{'tt include} problem, where bindings defined by include are visible
+only where the {\tt include} form occurs, and not outside of it, which
+some people expect.  To illustrate this point, take the following
+example; this code will not run, but will instead result in an error:
+
+\verbatimescapechar \#
+\medskip\verbatim
+(@chezweb)
+
+(@ ""
+(@> |My A| (export a)
+(define a 3)
+))
+
+(@ ""
+(@> |My A again| (export a)
+(@< |My A|)
+))
+
+(@ ""
+(@c
+(@< |My A again|)
+(display a) (newline)
+))
+#endverbatim
+\medskip
+
+\verbatimescapechar |
+
+\noindent
+In the above code, when we attempt to load this program, we will get
+an error that {\tt a} is not defined.  Th reason is that we have tried
+to use the A binding outside of where it is visible.  We have two code
+chunks that are attempting to export the same binding.  The second
+binding will be made visible at the call site, but the insertion from
+the ``My A'' code chunk will only be visible inside of the ``My A
+again'' chunk, which means that the A will not be defined or visible
+at the call site.  Put simply, if you want to re-export a binding, you
+need to thread the bindings through.  This requires that you use the
+{\tt @<<} form, which is the same as the {\tt @<} form, except that it
+threads the bindings back through if they are re-exported.
+
+Sometimes more care about what is bound and not bound is required than
+you can get with just {\tt @<<} alone.  In that case, you may have to
+do some explicit capturing using the {\tt capture} form, which will
+give you precise control over the threading.
+
+Both {\tt @<} and {\tt @<<} have the same basic syntax:
+
+\medskip\verbatim
+(@< chunk-name captures ...)
+|endverbatim
+\medskip
+
+\noindent
+That's about all there is to it.  There really are not too many
+control codes to worry about, but some care must be taken when doing
+Hygienic Literate Programming, even though you get nice additional
+guarantees and some assurances.  The next section describes the
+general forms that aren't really documentation or code forms.
+
+One important note about named chunks is that they must be defined
+before they can be used.  If you are using it inside of another chunk,
+this really only comes into play if that other named chunk is used
+before the called chunk is defined.  This basically means that if you
+plan to use a named chunk inside of a top-level unnamed chunk, you
+need to put the named chunk before the unnamed chunk.  This normally
+isn't a problem, but in those cases where it really doesn't make sense
+to put the named chunk above the unnamed chunk, it sometimes makes
+sense to wrap what you would normally put into the unnamed chunk into
+another named chunk, and then use that named chunk inside an unnamed
+chunk at the end of all of the named chunks in the group.
+
+\heading{Miscellaneous Forms}%
+The two forms here are really meta-level forms.  The first, {\tt
+@chezweb} is simply a token that you should put at the top of every
+one of your files, as we have done here.  The {\tt @l} form is a form
+that documents a library, and wraps a series of sections.  These
+sections are then restricted in scope to the given library.  It has
+the following syntax:
+
+\medskip\verbatim
+(@l doc-string
+
+library-spec
+(export export-spec ...)
+(import import-spec ....)
+
+sections ...)
+|endverbatim
+\medskip
+
+\noindent
+The specifications are the same as their R6RS analogues.  The
+documentation string is the same as any other documentation string,
+except that it will be formatted fairly close to the top of the
+library.
 
 \bye
