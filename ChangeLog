@@ -1,3 +1,7 @@
+Changes from 1.2 to 1.2.1:
+ 
+  Fix a bug in the order of exact? and integer? checks in ChezWEAVE.
+ 
 Changes from 1.1 to 1.2:
 
   Enable environment variables CHEZWEBMAXELEMS and CHEZWEBLISTCOLUMNS
