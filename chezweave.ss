@@ -27,7 +27,10 @@
     export import capture include quote 
     quasiquote
     unquote unquote-splicing)
-  (import (rename (chezscheme) (module %module) (quasiquote qq)))
+  (import 
+    (rename (chezscheme) 
+      (module %module) 
+      (quasiquote qq)))
  
 (define-syntax quasiquote
   (syntax-rules (unquote unquote-splicing %internal)
@@ -51,7 +54,7 @@
   (syntax-rules ()
     [(_ wrap n1 n2 ...)
      (for-all identifier? #'(wrap n1 n2 ...))
-     (trace-define-syntax wrap
+     (define-syntax wrap
        (syntax-rules (n1 n2 ...)
         [(_ (n1 rest (... ...)))
           (n1 rest (... ...))]
@@ -63,7 +66,7 @@
         [(_ other)
           (quote other)]))]))
 
-(define-quoter/except wrap 
+(define-quoter/except wrap
   @chezweb @ @* @> @< @<< @p @c @l 
   @section @section/header @define-chunk @chunk-ref
   @chunk-ref/thread @code @library
@@ -357,18 +360,17 @@
   
 (define env (environment '(arcfide chezweb weave)))
 
+(define (make-eval out)
+  (lambda (in)
+    (display (eval `(code->string (wrap ,in)) env) out)))
+
 (define (weave-file file)
   (let ([out (format "~a.tex" (path-root file))])
-    (call-with-input-file file
-      (lambda (ip)
-        (call-with-output-file out
-          (lambda (op)
-            (let loop ([in (read ip)])
-              (unless (eof-object? in)
-                (display (eval `(code->string (wrap ,in)) env) op)
-                (loop (read ip))))
-            (put-string op "\n\\bye\n"))
-          'replace)))))
+    (call-with-output-file out
+      (lambda (op) 
+        (load file (make-eval op))
+        (put-string op "\n\\bye\n"))
+      'replace)))
 
 (define (init/start . fns)
   (when (null? fns)
