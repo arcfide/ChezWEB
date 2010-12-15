@@ -116,8 +116,6 @@
 
 (define-syntax (capture x)
 	(syntax-violation 'capture "misplaced aux keyword" x))
-(define-syntax (export x)
-	(syntax-violation 'export "misplaced aux keyword" x))
 
 (define-syntax (@> x)
 	(define (single-form-check keyword stx subform)

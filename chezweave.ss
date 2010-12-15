@@ -24,7 +24,7 @@
     @chezweb @ @* @> @< @<< @c @l module wrap code->string
     @section @section/header @define-chunk @chunk-ref
     @chunk-ref/thread @code @library
-    export import capture include quote 
+    export import capture quote 
     quasiquote
     unquote unquote-splicing)
   (import 
@@ -70,7 +70,7 @@
   @chezweb @ @* @> @< @<< @p @c @l 
   @section @section/header @define-chunk @chunk-ref
   @chunk-ref/thread @code @library
-  module include quasiquote quote)
+  module quasiquote quote)
 
 (define-syntax define-syntax-alias
   (syntax-rules ()
@@ -190,8 +190,6 @@
 
 (define-syntax (capture x)
   (syntax-violation 'capture "misplaced aux keyword" x))
-(define-syntax (export x)
-  (syntax-violation 'export "misplaced aux keyword" x))
 
 (define-syntax (@> x)
   (define (single-form-check keyword stx subform)
