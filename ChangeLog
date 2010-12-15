@@ -1,3 +1,7 @@
+Changes from 1.2.1 to 1.2.2:
+
+  Upgrade the system to use the latest Chez Scheme version 8.1.
+
 Changes from 1.2 to 1.2.1:
  
   Fix a bug in the order of exact? and integer? checks in ChezWEAVE.
