@@ -1,3 +1,8 @@
+Changes from 1.2.2 to 1.2.1:
+
+  Fix a bug where ‘quote’ was not handled in the right way in 
+  ChezWEAVE.
+
 Changes from 1.2.1 to 1.2.2:
 
   Upgrade the system to use the latest Chez Scheme version 8.1.

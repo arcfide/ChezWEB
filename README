@@ -73,7 +73,7 @@ Basically, you want to do four things when you install ChezWEB:
   
   The install make target installs the boot files into 
   
-    /usr/lib/csv8.0/$MACHINE
+    /usr/lib/csv8.1/$MACHINE
     
   And you should change this installation location if you have a
   different place where you install the heap files. This could be if you
