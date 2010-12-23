@@ -29,17 +29,25 @@
     unquote unquote-splicing)
   (import 
     (rename (chezscheme) 
+      (quote q)
       (module %module) 
       (quasiquote qq)))
+
+(define-syntax quote
+  (syntax-rules (%internal)
+    [(_ e) (list (q quote) (quote %internal e))]
+    [(_ %internal (e . rest))
+     (cons (quote %internal e) (quote %internal rest))]
+    [(_ %internal e) (q e)]))
  
 (define-syntax quasiquote
   (syntax-rules (unquote unquote-splicing %internal)
-    [(_ e) (list 'quasiquote (quasiquote %internal e))]
-    [(_ %internal (unquote e)) (list 'unquote (wrap e))]
-    [(_ %internal (unquote-splicing e)) (list 'unquote-splicing (wrap e))]
+    [(_ e) (list (q quasiquote) (quasiquote %internal e))]
+    [(_ %internal (unquote e)) (list (q unquote) (wrap e))]
+    [(_ %internal (unquote-splicing e)) (list (q unquote-splicing) (wrap e))]
     [(_ %internal (e . rest)) 
      (cons (quasiquote %internal e) (quasiquote %internal rest))]
-    [(_ %internal e) (quote e)]))
+    [(_ %internal e) (q e)]))
 
 (define max-simple-elems 
   (make-parameter
@@ -64,13 +72,14 @@
         [(_ (head rest (... ...)))
           (list (wrap head) (wrap rest) (... ...))]
         [(_ other)
-          (quote other)]))]))
+          (q other)]))]))
 
 (define-quoter/except wrap
   @chezweb @ @* @> @< @<< @p @c @l 
   @section @section/header @define-chunk @chunk-ref
   @chunk-ref/thread @code @library
-  module quasiquote quote)
+  quote quasiquote
+  module)
 
 (define-syntax define-syntax-alias
   (syntax-rules ()
@@ -110,9 +119,13 @@
   (sanitize (symbol->string sym)))
 
 (define (sanitize/symbol-or-pair x)
-  (if (pair? x)
-      (map sanitize/symbol-or-pair x)
-      (sanitize/symbol x)))
+  (cond
+    [(pair? x)
+     (cons (sanitize/symbol-or-pair (car x))
+           (sanitize/symbol-or-pair (cdr x)))]
+    [(null? x) (q ())]
+    [else
+      (sanitize/symbol x)]))
 
 (define (sanitize/string s)
   (list->string
@@ -121,14 +134,14 @@
         (case e
           [(#\\) (cons* #\backspace #\s #\{ #\}  s)]
           [else (cons e s)]))
-      '()
+      (q ())
       (string->list
         (let ([t (with-output-to-string (lambda () (pretty-print s)))])
           (substring t 1 (- (string-length t) 2)))))))
 
 (define (sanitize code)
   (let loop ([in (string->list (code->string code))] 
-             [out '()])
+             [out (q ())])
     (case (and (pair? in) (car in))
       [(#f) (list->string (reverse out))]
       [(#\% #\$ #\&)
@@ -148,15 +161,15 @@
     [(symbol? id) (strip-special/string (symbol->string id))]
     [(string? id) (strip-special/string id)]
     [(number? id) (strip-special/string (number->string id))]
-    [else (error 'strip-special "unknown type for ~s" id)]))
+    [else (error (q strip-special) "unknown type for ~s" id)]))
 
 (define (strip-special/string s)
-  (let loop ([cl (string->list s)] [rl '()])
+  (let loop ([cl (string->list s)] [rl (q ())])
     (cond
       [(not (pair? cl)) (list->string (reverse rl))]
       [(char-alphabetic? (car cl)) (loop (cdr cl) (cons (car cl) rl))]
       [(char-numeric? (car cl)) (loop (cdr cl) (cons (car cl) rl))]
-      [(memq (car cl) '(#\- #\?)) (loop (cdr cl) (cons (car cl) rl))]
+      [(memq (car cl) (q (#\- #\?))) (loop (cdr cl) (cons (car cl) rl))]
       [else 
         (loop 
           (cdr cl) 
@@ -183,32 +196,31 @@
     [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
      (and 
       (for-all maybe-tree/identifier? #'(i ...))
-      (for-all maybe-list/identifier? #'(e ...))
-      (for-all maybe-tree/identifier? #'(name c ...)))
-     (render-@> 'name '(i ...) '(e ...) '(c ...)
+      (for-all maybe-list/identifier? #'(e ...)))
+     (render-@> (q name) (q (i ...)) (q (e ...)) (q (c ...))
        (wrap e1) (wrap e2) ...)]))
 
 (define-syntax (capture x)
-  (syntax-violation 'capture "misplaced aux keyword" x))
+  (syntax-violation (q capture) "misplaced aux keyword" x))
 
 (define-syntax (@> x)
   (define (single-form-check keyword stx subform)
     (unless (null? (syntax->datum stx))
-      (syntax-violation '@> 
+      (syntax-violation (q @>) 
         (format "more than one ~a form encountered" keyword)
         x subform)))
   (syntax-case x (@>-params export import capture)
     [(_ name (@>-params imps exps caps) (export e ...) e1 e2 ...)
      (begin 
-      (single-form-check 'export #'exps #'(export e ...))
+      (single-form-check (q export) #'exps #'(export e ...))
       #'(@> name (@>-params imps (e ...) caps) e1 e2 ...))]
     [(_ name (@>-params imps exps caps) (import i ...) e1 e2 ...)
      (begin 
-      (single-form-check 'import #'imps #'(import i ...))
+      (single-form-check (q import) #'imps #'(import i ...))
       #'(@> name (@>-params (i ...) exps caps) e1 e2 ...))]
     [(_ name (@>-params imps exps caps) (capture c ...) e1 e2 ...)
      (begin 
-      (single-form-check 'capture #'caps #'(capture c ...))
+      (single-form-check (q capture) #'caps #'(capture c ...))
       #'(@> name (@>-params imps exps (c ...)) e1 e2 ...))]
     [(_ name (@>-params imps exps caps) e1 e2 ...)
       #'(%@> name imps exps caps e1 e2 ...)]
@@ -237,11 +249,11 @@
 
 (define-syntax @<
   (syntax-rules ()
-    [(_ id rest ...) (render-@< 'id)]))
+    [(_ id rest ...) (render-@< (q id))]))
 
 (define-syntax @<<
   (syntax-rules ()
-    [(k id rest ...) (render-@< 'id)]))
+    [(k id rest ...) (render-@< (q id))]))
 
 (define (render-@< id)
   (make-section-ref 
@@ -311,13 +323,13 @@
     [(k doc (n1 n2 ...) (export e ...) (import i ...) b1 b2 ...)
      (and 
       (string? (syntax->datum #'doc))
-      (eq? 'export (syntax->datum #'export))
-      (eq? 'import (syntax->datum #'import)))
+      (eq? (q export) (syntax->datum #'export))
+      (eq? (q import) (syntax->datum #'import)))
      (let-values (
-        [(efmt eargs)
-          (render-list (map sanitize/symbol '(e ...)))]
-        [(ifmt iargs) 
-          (render-list (map sanitize/symbol-or-pair '(i ...)))])
+         [(efmt eargs)
+          (render-list (map sanitize/symbol (q (e ...))))]
+         [(ifmt iargs) 
+          (render-list (map sanitize/symbol-or-pair (q (i ...))))])
        (format 
          "\\library{~a}
          ~a\\par
@@ -328,11 +340,11 @@
           ~?
           \\endimport\\bigskip
           ~{~a~}\\endlibrary{~a}\n"
-         '(n1 n2 ...) doc
+         (q (n1 n2 ...)) doc
          efmt eargs
          ifmt iargs
          (qq (,(wrap b1) ,(wrap b2) ...))
-         '(n1 n2 ...)))]))
+         (q (n1 n2 ...))))]))
 
 (define-syntax @chezweb
   (syntax-rules ()
@@ -356,7 +368,7 @@
 (let ()
   (import (chezscheme))
   
-(define env (environment '(arcfide chezweb weave)))
+(define env (environment (quote (arcfide chezweb weave))))
 
 (define (make-eval out)
   (lambda (in)
@@ -368,7 +380,7 @@
       (lambda (op) 
         (load file (make-eval op))
         (put-string op "\n\\bye\n"))
-      'replace)))
+      (quote replace))))
 
 (define (init/start . fns)
   (when (null? fns)
