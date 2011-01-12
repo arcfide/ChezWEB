@@ -26,6 +26,16 @@
 		export import capture)
 	(import (chezscheme))
 
+;; We need to define our own export procedure if we do not already 
+;; have one.
+
+(meta-cond
+  [(memq 'export (library-exports '(chezscheme)))
+   (begin)]
+  [else
+   (define-syntax (export x)
+     (syntax-violation #f "misplaced aux keyword" x))])
+
 (define-syntax define-syntax-alias
 	(syntax-rules ()
 		[(_ new old)

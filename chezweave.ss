@@ -33,6 +33,16 @@
       (module %module) 
       (quasiquote qq)))
 
+;; We need to define our own export procedure if we do not already 
+;; have one.
+
+(meta-cond
+  [(memq (q export) (library-exports (q (chezscheme))))
+   (begin)]
+  [else
+   (define-syntax (export x)
+     (syntax-violation #f "misplaced aux keyword" x))]) 
+
 (define-syntax quote
   (syntax-rules (%internal)
     [(_ e) (list (q quote) (quote %internal e))]
