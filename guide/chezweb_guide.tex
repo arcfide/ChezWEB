@@ -133,11 +133,11 @@ that exist to improve the quality of a piece of software.
 
 \heading{Scheme and Traditional Literate Programming}%
 First, let's discuss the Scheme in the context of traditional Literate
-Programming tools Generally, two sorts of Literate
+Programming tools. Generally, two sorts of Literate
 Programming systems exist.  These fall under the traditional
 categorization.
 Programs like CWEB and WEB, which Knuth uses, are tightly integrated
-into the programmling language around which they work.  They are also
+into the programming language around which they work.  They are also
 tied rather directly to the documentation language that they use.
 There are many different special purpose constructs that you use to
 dictate how your program is organized and used.  For example, CWEB has
@@ -280,15 +280,15 @@ The typical ChezWEB library might look something like this:
 
 \noindent
 The 
-\verbatim export|endverbatim 
+\verbatim export |endverbatim 
 and 
-\verbatim import|endverbatim 
+\verbatim import |endverbatim 
 specifications are the same as the R6RS import and
 export forms.  
-\verbatim Sections|endverbatim 
+\verbatim Sections |endverbatim 
 are any valid ChezWEB
 section.  The 
-\verbatim @chezweb|endverbatim 
+\verbatim @chezweb |endverbatim 
 form should be at the top
 of every ChezWEB program.
 
@@ -308,9 +308,9 @@ In the next three sections I will detail the operation of each of
 these forms.  Firstly, though, I would like to give the basic
 structure of a section.  Normally, a section will consist of one
 documentation form encapsulating one code form.  This is the way that
-Chez WEB is designed to work, but there are other ways that you can do
+ChezWEB is designed to work, but there are other ways that you can do
 things and still get decent results.  ChezWEB was organized in this
-way primarily for providing good printed out put, even though the code
+way primarily for providing good printed output, even though the code
 side of the system is more flexible than that.  I have not developed
 an useful way of thinking about these forms when they are deeply
 nested, at least, not when it comes to formatting it into something
@@ -471,7 +471,9 @@ like the following ChezWEB program:
 \medskip\verbatimescapechar |
 
 \noindent The output of this program if we were to load it with the
-Tangle environment, or using the |cheztangle| program would be
+Tangle environment, or using the 
+\verbatim cheztangle |endverbatim
+ program would be
 something like this:
 
 \medskip\verbatim
@@ -560,7 +562,7 @@ example; this code will not run, but will instead result in an error:
 
 \noindent
 In the above code, when we attempt to load this program, we will get
-an error that {\tt a} is not defined.  Th reason is that we have tried
+an error that {\tt a} is not defined.  The reason is that we have tried
 to use the A binding outside of where it is visible.  We have two code
 chunks that are attempting to export the same binding.  The second
 binding will be made visible at the call site, but the insertion from
