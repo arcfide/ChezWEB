@@ -1,9 +1,9 @@
 PREFIX=/usr
-CSV=${PREFIX}/lib/csv8.1
+CSV=${PREFIX}/lib/csv8.2
 PETITE=${PREFIX}/bin/petite
 MACHINE=ta6le
 BIN=/usr/local/bin
-VERSION=1.2.3
+VERSION=1.2.4
 TEXMF=/usr/share/texmf-local/tex/chezweb
 
 .SUFFIXES: .boot .ss
