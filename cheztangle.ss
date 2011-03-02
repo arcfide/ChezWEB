@@ -23,6 +23,7 @@
 		@chezweb @> @* @< @<< @ @c @l 
 		@section @section/header @define-chunk @chunk-ref
 		@chunk-ref/thread @code @library
+                @e @eval
 		export import capture)
 	(import (chezscheme))
 
@@ -52,6 +53,7 @@
 (define-syntax-alias @chunk-ref/thread @<<)
 (define-syntax-alias @code @c)
 (define-syntax-alias @library @l)
+(define-syntax-alias @eval @e)
 
 (define-syntax @chezweb
 	(syntax-rules ()
@@ -204,6 +206,11 @@
 						(export e ...)
 						(import (arcfide chezweb tangle) i ...)
 						body ...))])))
+
+(define-syntax @e
+  (syntax-rules ()
+    [(_ rest ...)
+     (let () rest ...)]))
 
 )
 

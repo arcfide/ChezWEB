@@ -24,6 +24,7 @@
     @chezweb @ @* @> @< @<< @c @l module wrap code->string
     @section @section/header @define-chunk @chunk-ref
     @chunk-ref/thread @code @library
+    @e @eval
     export import capture quote 
     quasiquote
     unquote unquote-splicing)
@@ -85,7 +86,7 @@
           (q other)]))]))
 
 (define-quoter/except wrap
-  @chezweb @ @* @> @< @<< @p @c @l 
+  @chezweb @ @* @> @< @<< @p @c @l @e @eval
   @section @section/header @define-chunk @chunk-ref
   @chunk-ref/thread @code @library
   quote quasiquote
@@ -107,6 +108,12 @@
 (define-syntax-alias @chunk-ref/thread @<<)
 (define-syntax-alias @code @c)
 (define-syntax-alias @library @l)
+(define-syntax-alias @eval @e)
+
+(define-syntax @e
+  (syntax-rules ()
+    [(_ rest ...)
+     (let () rest ... "")]))
 
 (define-record-type section-ref (fields name))
 
