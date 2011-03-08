@@ -1,5 +1,5 @@
 #! /usr/bin/env scheme-script
 (import 
-  (only (chezscheme) apply command-line-arguments) 
+  (only (chezscheme) apply command-line-arguments scheme-start) 
   (arcfide chezweb tangle))
 (apply (scheme-start) (command-line-arguments))
