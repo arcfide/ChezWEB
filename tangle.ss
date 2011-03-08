@@ -18,6 +18,7 @@
 ;;; TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 ;;; PERFORMANCE OF THIS SOFTWARE.
 
+#!chezscheme
 (library (arcfide chezweb tangle)
 	(export 
 		@chezweb @> @* @< @<< @ @c @l 
