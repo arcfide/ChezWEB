@@ -8,7 +8,9 @@ TEXMF=/usr/share/texmf-local/tex/chezweb
 
 .SUFFIXES: .boot .ss
 
-build: cheztangle.boot chezweave.boot
+build: tangle.boot weave.boot
+	ln -f tangle.boot cheztangle.boot
+	ln -f weave.boot chezweave.boot
 
 package:
 	rm -rf chezweb-${VERSION}
