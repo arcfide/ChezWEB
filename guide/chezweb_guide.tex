@@ -11,7 +11,7 @@
 \vskip 1in
 {\center Aaron W. Hsu
 \tt arcfide@sacrideo.us
-June 19, 2010}
+April 16th, 2011}
 \vfill
 \noindent
 Copyright $\copyright$ 2010 Aaron W. Hsu {\tt <arcfide@sacrideo.us>}. All rights reserved.\par
@@ -279,10 +279,7 @@ The typical ChezWEB library might look something like this:
 \medskip
 
 \noindent
-The 
-\verbatim export |endverbatim 
-and 
-\verbatim import |endverbatim 
+The {\tt export} and {\tt import}
 specifications are the same as the R6RS import and
 export forms.  
 \verbatim Sections |endverbatim 
@@ -604,10 +601,43 @@ sense to wrap what you would normally put into the unnamed chunk into
 another named chunk, and then use that named chunk inside an unnamed
 chunk at the end of all of the named chunks in the group.
 
+\heading{Dealing with ellipses}%
+As of version 1.3 of ChezWEB, there is a new handling for ellipses in named
+chunks. Consider the following program, which, at first glance, appears
+to be fine:
+
+\medskip\verbatim
+(@> ||Define cool macro|| 
+  (export my-mac) 
+  (capture message)
+(define-syntax my-mac
+  (syntax-rules ()
+    [(_ e1 e2 ...)
+     (begin
+       (display message) (newline)
+       e1 e2 ...)]))
+)
+|endverbatim
+\medskip
+
+\noindent 
+In previous versions of ChezWEB, this would flag an error, because the
+entire body of a named chunk used to be expanded as if it were the body
+of a syntax-rules clause with the captures as the pattern. This
+basically means that while you could use patterns in the capture clause,
+which was nice, you could not do the above without ``quoting'' or
+escaping the macros that you used which relied on ellispes themselves.
+This is a very annoying thing to do. As of ChezWEB 1.3, this has
+changed. Instead, when you have a capture clause---or none at all---that
+has no ellipses pattern in it, then ChezWEB will arrange it so that
+ellipses in the body do not try to match patterns in the capture
+clause. If you use an ellipsis pattern in the capture clause, you will
+still have the old behavior.
+
 \heading{Miscellaneous Forms}%
-The two forms here are really meta-level forms.  The first, {\tt
-@chezweb} is simply a token that you should put at the top of every
-one of your files, as we have done here.  The {\tt @l} form is a form
+The three forms here are really meta-level forms.  The first, {\tt
+@chezweb} should be included at the top of every ChezWEB program or
+file, as we have done here.  The {\tt @l} form is a form
 that documents a library, and wraps a series of sections.  These
 sections are then restricted in scope to the given library.  It has
 the following syntax:
@@ -628,5 +658,24 @@ The specifications are the same as their R6RS analogues.  The
 documentation string is the same as any other documentation string,
 except that it will be formatted fairly close to the top of the
 library.
+
+Of a little more intereste is the ``evaluation'' form. 
+It may be useful to change the state of the Chez Scheme system 
+during the expansion of or weaving of a program. That is, you may wish
+to run arbitrary pieces of code purely for their side effects, rather
+than for their printed output. In these cases, the {\tt @e} form enables
+you to do just that. In particular, this is often quite useful if you
+want to set up the pretty printer to handle some of your own syntaxes or
+forms so that they are formatted correctly by the Chez Scheme pretty
+printer when woven.
+
+\medskip\verbatim
+(@e expr ...)
+|endverbatim
+\medskip
+
+\noindent The {\tt expr} forms will be each evaluated for their side
+effects, and the entire {\tt @e} form will have no effect on the woven
+output.
 
 \bye
