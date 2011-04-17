@@ -1,5 +1,9 @@
 #! /usr/bin/env scheme-script
-(import 
-  (only (chezscheme) apply command-line-arguments scheme-start) 
-  (arcfide chezweb tangle))
-(apply (scheme-start) (command-line-arguments))
+(import (chezscheme))
+
+(with-exception-handler
+  default-exception-handler
+  (lambda ()
+    (new-cafe 
+      (lambda (x) 
+        (eval x (environment '(chezscheme) '(arcfide chezweb tangle)))))))
