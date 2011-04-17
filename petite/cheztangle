@@ -2,4 +2,4 @@
 
 TANGLE=/your/path/to/tangle.ss
 
-exec petite $TANGLE
+exec petite $TANGLE $@
