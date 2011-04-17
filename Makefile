@@ -22,7 +22,9 @@ build: ${BOOTFILES}
 package:
 	rm -rf chezweb-${VERSION}
 	mkdir -p chezweb-${VERSION}/guide
+	mkdir -p chezweb-${VERSION}/petite
 	cp ${SOURCES} chezweb-${VERSION}
+	cp ${SCRIPTS} chezweb-${VERSION}/petite
 	cp ${AUXFILES} chezweb-${VERSION}
 	cp ${GUIDE} chezweb-${VERSION}/guide
 	tar cvf chezweb-${VERSION}.tar chezweb-${VERSION}

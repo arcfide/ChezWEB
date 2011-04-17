@@ -1,7 +1,7 @@
 ChezWEB: A WEB system for Scheme
 ================================
 
-Copyright (c) 2010 Aaron W. Hsu <arcfide@sacrideo.us>.
+Copyright (c) 2011 Aaron W. Hsu <arcfide@sacrideo.us>.
 
 ChezWEB is a system for doing Knuthian style WEB programming in Scheme,
 and more particularly, it is implemented in Chez Scheme. It has a
@@ -117,10 +117,16 @@ Basically, you want to do four things when you install ChezWEB:
 The Makefile should take care of all of this for you if you can remember
 to set the Makefile variables correctly.
 
+Using ChezWEB without the compiler
+----------------------------------
+
+There are some scripts in the petite directory that will help users 
+who want to run ChezWEB without having the compiled version.
+
 System Requirements
 -------------------
 
-ChezWEB requires (Petite) Chez Scheme 8.0, as it is built on R6RS.
+ChezWEB requires (Petite) Chez Scheme 8.x, as it is built on R6RS.
 
 What makes ChezWEB unique? Why should I use it?
 -----------------------------------------------
@@ -191,8 +197,10 @@ look and feel of normal CWEB documents as much as possible.
 Documentation
 -------------
 
-Ironically, there is not much documentation available for ChezWEB
-at the moment. I'm working on that. 
+You can find a Guide to ChezWEB for User's in the guide directory.
+Comments and suggestions for improvement are especially welcome here, 
+since the guide, while exhaustive in feature coverage, does not 
+really have much to say about any one thing.
 
 Obtaining ChezWEB
 -----------------
@@ -208,8 +216,7 @@ latest development branch.
   Branch: us.sacrideo.chezweb
 
 Tags are named CHEZWEB_MAJOR_MINOR_PATCH where MAJOR.MINOR.PATCH is
-the version for which you are looking. You can omit the patch version
-when the patch count is zero.
+the version for which you are looking. 
 
 Contact/Support
 ---------------
