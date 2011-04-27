@@ -3,7 +3,7 @@ CSV=${PREFIX}/lib/csv8.2
 PETITE=${PREFIX}/bin/petite
 MACHINE=ta6le
 BIN=/usr/local/bin
-VERSION=1.3.1
+VERSION=1.3.2
 TEXMF=/usr/share/texmf-local/tex/chezweb
 
 .SUFFIXES: .boot .ss

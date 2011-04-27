@@ -1,3 +1,8 @@
+Changes from 1.3.1 to 1.3.2:
+
+  Fix the @> handling of ellipses in the case where we return a value 
+  instead of export definitions.
+
 Changes from 1.3 to 1.3.1:
 
   Make @e a definition rather than a value form.

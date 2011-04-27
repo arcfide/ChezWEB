@@ -114,13 +114,19 @@
   (lambda (x)
     (syntax-case x ()
       [(_ name (i ...) () (c ...) e1 e2 ...)
-       #'(define-syntax name
-           (syntax-rules ()
-             [(_ k c ...) (let () (import i ...) e1 e2 ...)]))]
+       (if (has-dots? #'(c ...))
+	   #'(define-syntax name
+	       (syntax-rules ()
+		 [(_ k c ...) (let () (import i ...) e1 e2 ...)]))
+	   #'(define-syntax name
+	       (syntax-rules ()
+		 [(_ k c ...)
+		  (let () 
+		    (import i ...) 
+		    ((... ...) e1) ((... ...) e2) ...)])))]
       [(_ name (i ...) (e ...) (c ...) e1 e2 ...)
-       (with-syntax (
-           [(imps ...) (difference #'(e ...) #'(c ...))]
-           [(ecap ...) (intersect #'(e ...) #'(c ...))])
+       (with-syntax ([(imps ...) (difference #'(e ...) #'(c ...))]
+		     [(ecap ...) (intersect #'(e ...) #'(c ...))])
          (with-syntax ([(imp-id ...) (export-ids #'(imps ...))])
 	   (if (has-dots? #'(c ...))
                #'(define-syntax name
