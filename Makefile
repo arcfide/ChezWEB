@@ -1,6 +1,7 @@
 PREFIX=/usr
 CSV=${PREFIX}/lib/csv8.2
 PETITE=${PREFIX}/bin/petite
+SCHEME=${PREFIX}/bin/scheme
 MACHINE=ta6le
 BIN=/usr/local/bin
 VERSION=1.3.2
@@ -58,6 +59,6 @@ install: build
 	cp chezwebmac.tex ${TEXMF}
 
 .ss.boot:
-	@echo '(make-boot-file "$@" '"'"'("scheme.boot" "petite.boot") "$<")' | scheme -q
+	@echo '(make-boot-file "$@" '"'"'("scheme.boot" "petite.boot") "$<")' | ${SCHEME} -q
 
 
