@@ -228,7 +228,7 @@
 (define-syntax @e
   (syntax-rules ()
     [(_ rest ...)
-     (let () rest ...)]))
+     (module () rest ...)]))
 
 )
 
