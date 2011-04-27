@@ -19,6 +19,21 @@
 ;;; PERFORMANCE OF THIS SOFTWARE.
 
 #!chezscheme
+(library (arcfide chezweb weave parameters)
+  (export max-simple-elems list-columns)
+  (import (chezscheme))
+
+(define max-simple-elems 
+  (make-parameter
+    (let ([max-env (getenv "CHEZWEBMAXELEMS")])
+      (or (and max-env (string->number max-env)) 7))))
+
+(define list-columns 
+  (make-parameter
+    (let ([cols (getenv "CHEZWEBLISTCOLUMNS")])
+      (or (and cols (string->number cols)) 3))))
+)
+
 (library (arcfide chezweb weave)
   (export 
     @chezweb @ @* @> @< @<< @c @l module wrap code->string
@@ -32,7 +47,8 @@
     (rename (chezscheme) 
       (quote q)
       (module %module) 
-      (quasiquote qq)))
+      (quasiquote qq))
+    (arcfide chezweb weave parameters))
 
 ;; We need to define our own export procedure if we do not already 
 ;; have one.
@@ -59,15 +75,6 @@
     [(_ %internal (e . rest)) 
      (cons (quasiquote %internal e) (quasiquote %internal rest))]
     [(_ %internal e) (q e)]))
-
-(define max-simple-elems 
-  (make-parameter
-    (let ([max-env (getenv "CHEZWEBMAXELEMS")])
-      (or (and max-env (string->number max-env)) 7))))
-(define list-columns 
-  (make-parameter
-    (let ([cols (getenv "CHEZWEBLISTCOLUMNS")])
-      (or (and cols (string->number cols)) 3))))
 
 (define-syntax define-quoter/except
   (syntax-rules ()
