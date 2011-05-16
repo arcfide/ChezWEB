@@ -1,10 +1,10 @@
 PREFIX=/usr
-CSV=${PREFIX}/lib/csv8.2
+CSV=${PREFIX}/lib/csv8.3
 PETITE=${PREFIX}/bin/petite
 SCHEME=${PREFIX}/bin/scheme
 MACHINE=ta6le
 BIN=/usr/local/bin
-VERSION=1.3.2
+VERSION=1.4.0a
 TEXMF=/usr/share/texmf-local/tex/chezweb
 
 .SUFFIXES: .boot .ss
