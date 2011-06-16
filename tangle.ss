@@ -21,10 +21,10 @@
 #!chezscheme
 (library (arcfide chezweb tangle)
   (export 
-    @chezweb @> @* @< @<< @ @c @l 
+    @chezweb @> @* @< @<< @ @c @l @e
     @section @section/header @define-chunk @chunk-ref
     @chunk-ref/thread @code @library
-    @e @eval
+    @eval
     export import capture)
   (import (chezscheme))
 

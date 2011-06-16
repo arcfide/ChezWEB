@@ -36,10 +36,10 @@
 
 (library (arcfide chezweb weave)
   (export 
-    @chezweb @ @* @> @< @<< @c @l module wrap code->string
+    @chezweb @ @* @> @< @<< @c @l @e 
     @section @section/header @define-chunk @chunk-ref
-    @chunk-ref/thread @code @library
-    @e @eval
+    @chunk-ref/thread @code @library @eval
+    module wrap code->string
     export import capture quote 
     quasiquote
     unquote unquote-splicing)
