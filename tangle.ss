@@ -19,9 +19,11 @@
 ;;; PERFORMANCE OF THIS SOFTWARE.
 
 #!chezscheme
+(include "weave_params.ss")
+
 (library (arcfide chezweb tangle)
   (export 
-    @chezweb @> @* @< @<< @ @c @l @e
+    @chezweb @e @> @< @<< @c @* @ @l
     @section @section/header @define-chunk @chunk-ref
     @chunk-ref/thread @code @library
     @eval

@@ -19,20 +19,7 @@
 ;;; PERFORMANCE OF THIS SOFTWARE.
 
 #!chezscheme
-(library (arcfide chezweb weave parameters)
-  (export max-simple-elems list-columns)
-  (import (chezscheme))
-
-(define max-simple-elems 
-  (make-parameter
-    (let ([max-env (getenv "CHEZWEBMAXELEMS")])
-      (or (and max-env (string->number max-env)) 7))))
-
-(define list-columns 
-  (make-parameter
-    (let ([cols (getenv "CHEZWEBLISTCOLUMNS")])
-      (or (and cols (string->number cols)) 3))))
-)
+(include "weave_params.ss")
 
 (library (arcfide chezweb weave)
   (export 

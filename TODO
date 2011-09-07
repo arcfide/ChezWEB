@@ -1,0 +1,31 @@
+* Reformulate chunks to eliminate the need to use @< and @<<
+* Create a tangler for the CWEB syntax
+* Find a way of dealing with libraries
+* Implement Scribble
+* Concatenation for chunks
+* Cross-referencing of chunks
+* Non-hygienic chunks
+* Pretty printer for Scheme
+
+NEW OPERATORS FOR VERSION 2
+
+Runtime Operators
+
+      @<            Define Chunk
+
+Weave Operators
+
+      @p            Top level program
+      @             Untitled section
+      @*            Title section
+      @e            Evaluate 
+      @r            REPL Interaction
+      @@            Escaped @
+      @(            Write to file
+      @^            Index in roman type
+      @.            Index in typewriter type
+      @:            Index defined by \9
+      @q            Comment
+      @i            Include
+      @c            Captures and Exports
+      
