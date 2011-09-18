@@ -25,7 +25,7 @@
 ;; works only on the CWEB syntax, and does not support the Scribble
 ;; syntax. It is designed to let the user build a running version of
 ;; TANGLE from the WEB syntax files tangle.w.
-
+#!chezscheme
 (import (chezscheme))
 
 (module (@@< =>)

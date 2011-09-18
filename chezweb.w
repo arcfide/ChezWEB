@@ -698,6 +698,12 @@ runtime overhead for putting all of the chunks in our code, and
 the code that we have to write will be much simpler, and likely 
 much less buggy. This is, overall, a good thing.
 
+As a final note, we should remember to use the right mode for 
+our files. Since any tangled file is relying on Chez Scheme features, 
+we will need to ensure that Chez Scheme mode rather than R6RS 
+compatibility mode is enabled by putting the |#!chezscheme| 
+directive in there at the top of the file.
+
 We can thus sketch out a general process for writing out the 
 correct contents of a file that we are writing to.
 
@@ -705,6 +711,7 @@ correct contents of a file that we are writing to.
 @<Write tangled file contents@>=
 (call-with-output-file output-file
 	(lambda (output-port)
+		(put-string output-port "#!chezscheme\n\n")
 		(put-string output-port runtime-code)
 		|Write named chunks to file|
 		(put-string output-port
