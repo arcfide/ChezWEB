@@ -10,9 +10,6 @@
 \hsize = 5.5in
 \vsize = 8in
 
-% Still to do:
-% 
-% 	The tokenizer should eliminate comments
 @q[cf]
 
 @q[of]:Introduction
@@ -341,8 +338,9 @@ well. The list of tokens is accumulated in reverse order.
 @<Parse possible control code@>=
 (let ([nc (read-char port)])
 	(case nc
-		[(#\@) (loop tokens (cons c cur))]
-		[	(#\space #\< #\p #\* #\e #\r #\( #\^ #\. #\: #\q #\i #\c)
+		[	(#\@) (loop tokens (cons c cur))]
+		[	(#\q) (read-line port) (loop tokens cur)]
+		[	(#\space #\< #\p #\* #\e #\r #\( #\^ #\. #\: #\i #\c)
 			(let ([token (string->symbol (string c nc))])
 				(if	(null? cur)
 					(loop (cons token tokens) '())
@@ -661,6 +659,105 @@ write will have the same basic shape and layout:
 
 $$\includegraphics[height=2in]{chezweb-1.eps}$$
 
+\noindent The above diagram illustrates the relative positions of the 
+three important pieces of a tangled file. In the first piece, we just 
+put the contents of the runtime directly into the top of the file. 
+Next, we put all of the chunks defined in the \WEB\ into the spot 
+right below the runtime. Afterwards follows all of the top level 
+code.
+
+We do have a design decision to make at this point. We could walk
+through the code trying to find any reference to a chunk and then 
+only include those chunks that have been referenced. The motivation 
+for this would be to avoid including code that we don't need to include 
+in the tangled file. If we worked hard enough at it, then we could 
+also allow the user to rebind or redefine names that we bound to 
+chunk names in the \WEB\ but that were not referenced in the 
+specific file we are tangling. Unfortunately, a naive approach to 
+searching for chunk references will not catch these instances, 
+and arguably, we want the user to be aware when the user attempts 
+to rebind an identifier that has already been bound to the name 
+of a chunk. Indeed, because chunk names should be descriptive, 
+there would be very little reason for an user to every conflict 
+with the named chunks (automatically generated code being an 
+exception here). A conflict could be thought of as a programming 
+error; rather than letting the code silently fail, we will include 
+all of the named chunks into the output of every tangled file that 
+is written from a given \WEB{}. When this tangled file is included 
+into either a library or a module, where redefinitions are not 
+allowed, then the programmer will receive an error whenever 
+two bindings to the same name, or a named chunk conflict occur. 
+
+Using the above technique actually does nothing to our performance, 
+because the chunks are implemented as macros (identifier macros), 
+meaning that they exist only at macro expansion time. If a named 
+chunk is never referenced inside of a tangled file, then, it will never 
+appear in the runtime code, such as what is the result of 
+compiling a Scheme file. This means that we are encuring zero 
+runtime overhead for putting all of the chunks in our code, and 
+the code that we have to write will be much simpler, and likely 
+much less buggy. This is, overall, a good thing.
+
+We can thus sketch out a general process for writing out the 
+correct contents of a file that we are writing to.
+
+@c (output-file top-level-chunks named-chunks captures)
+@<Write tangled file contents@>=
+(call-with-output-file output-file
+	(lambda (output-port)
+		(put-string output-port runtime-code)
+		|Write named chunks to file|
+		(put-string output-port
+			(hashtable-ref top-level-chunks output-file "")))
+	'replace)
+
+@ For each named chunk that we find in the |named-chunks| hashtable,
+we can print out the body of the chunk wrapped in the normal runtime 
+format. If |body| is the string containing the body of the named chunk, 
+as stored in the table, then we want to output something like:
+
+\medskip\verbatim
+(@@< (name clst ...) [=> (elst ...)]
+body
+)
+|endverbatim
+\medskip
+
+\noindent We grab the captures and exports from the |captures|
+hashtable and we are careful to ensure that we don't put any exports 
+in the form unless we intend to do so.
+
+We should not have to worry about the ordering that we do the chunks 
+in, since they should all be at the same phase and they should be 
+definable in any order. 
+
+@c (captures named-chunks output-port)
+@<Write named chunks to file@>=
+(for-each
+	(lambda (name)
+		(let ([cell (hashtable-ref captures name '(() . #f))])
+			(format output-port
+				"(@< (~s ~{~s ~}) ~@[=> (~{~s ~})~]~n~s~n)~n"
+				name (car cell) (cdr cell)
+				(hashtable-ref named-chunks name ""))))
+	(hashtable-keys named-chunks))
+
+@ Now all of the pieces are in place to write the |tangle-file| procedure
+that we talked about previously. 
+
+@p
+(define (tangle-file web-file)
+	(let 
+			(	[tokens (call-with-input-file web-file chezweb-tokenize)]
+				[default-file (format "~a.ss" (path-root web-file))])
+		(let-values 
+				([	(top-level-chunks named-chunks captures)
+					(construct-chunk-tables tokens)])
+			(for-each
+				(lambda (file)
+					(let ([output-file (if (eq? '*default* file) default-file file)])
+						|Write tangled file contents|))
+				(hashtable-keys top-level-chunks)))))
 @q[cf]
 @q[of]:Weaving a WEB
 @* Weaving a WEB.
