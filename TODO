@@ -1,5 +1,3 @@
-* Reformulate chunks to eliminate the need to use @< and @<<
-* Create a tangler for the CWEB syntax
 * Find a way of dealing with libraries
 * Implement Scribble
 * Concatenation for chunks

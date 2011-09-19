@@ -34,14 +34,22 @@ discourages hacks to get around the disadvantages of traditional
 literate programming.
 @q[cf]
 @q[of]:The ChezWEB Runtime
-@* The ChezWEB Runtime.
+@* The ChezWEB Runtime. Normal \CWEB\ programs do not have any runtime, 
+and they operate completely at the equivalent of a macro expansion phase 
+before the C preprocessor runs. This is also how systems like {\tt noweb} 
+and others work. All of these systems lack the hygiene properties that 
+we want to preserve in a Scheme program, especially as they relate to 
+anything that might resemble macros. 
 
-@ The runtime itself for tangling programs is the macro that allows one to
-arbitrarily reorder chunks of code in a hygienic manner. Unlike other
-WEB systems, which have no visible presence in the final code, we do require
-the use of runtime code in all of our tangled code, because we rely on
-the expander to support our hygienic and lexical scoping properties.
+In order to preserve hygiene in our system, we rely on the Scheme macro 
+system to do the hard lifting for us. This means that we have to leave some 
+code around that the macro system can use to do the work we want it to.
+This is the \ChezWEB\ runtime. In point of fact, the runtime will not 
+remain at the actual runtime of the code, but exists during the macro 
+expansion phase of program evaluation.
 
+The runtime itself for tangling programs is a macro that allows one to
+arbitrarily reorder chunks of code in a hygienic manner. 
 The chunking macro itself is designed to support two important properties of
 a given chunk. These correspond to the normal hygienic conditions of
 hygiene proper and referential transparency. These properties may be
@@ -104,22 +112,17 @@ appear in definition contexts; it returns no value, but instead binds
 in the surrounding context of the reference those identifiers enumerated
 by |export ...| to the values to which they were bound in the chunk body.
 
-These two different semantics require two different expansions. The overall
-shape of our chunk defining macro then has the following form; we will
-consider each case separately.
-
 @(runtime.ss@>=
 (module (@@< =>)
-	(import (only (chezscheme) =>))
+	(import-only (chezscheme))
 
-(define-syntax (@@< x)
-	(syntax-case x (=>)
+(define-syntax @@<
+	(syntax-rules (=>)
 		[	(_ (name c ...) => (e ...) b1 b2 ...)
 			(for-all identifier? #'(name c ... e ...))
-			(module-form #'name #'(c ...) #'(e ...) #'(b1 b2 ...))]
+			(module-form name (c ...) (e ...) b1 b2 ...)]
 		[	(_ (name c ...) b1 b2 ...)
-			(for-all identifier? #'(name c ...))
-		 	(value-form #'name #'(c ...) #'(b1 b2 ...))]))
+			(value-form name (c ...) b1 b2 ...)]))
 
 @ Let's consider the value form first, since it is slightly easier. In this
 case, we want to define the macro |name| to be an identifier macro that
@@ -141,25 +144,24 @@ We use |alias| to link the two identifiers to the same underlying
 location. 
 
 @(runtime.ss@>=
-(meta define (build-value-form name captures body)
-	(with-syntax 
-			(	[(ic ...) captures]
-				[(oc ...) (datum->syntax name (syntax->list captures))]
-				[(body+ ...) body])
-		#'(let ()
-			(alias ic oc) ...
-			body+ ...)))
+(define-syntax (build-value-form x)
+	(syntax-case x ()
+		[	(_ id (ic ...) body ...)
+			(with-syntax
+					([	(oc ...) 
+						(datum->syntax #'id (syntax->datum #'(ic ...)))])
+				#'(let () (alias ic oc) ... body ...))]))
 
-@ This form is used as a part of the |value-form| procedure, which is what
+@ This form is used as a part of the |value-form| macro, which is what
 does the initial definition of the macro for
-|name|. This macro is just an identifier syntax that has clauses for
+|name|. The |name| macro is just an identifier syntax that has clauses for
 the single identifier use and the macro call, but nothing for the
 |set!| clause, since that doesn't make sense. Because we don't care about
 this case, we can avoid the use of |make-variable-transformer| and
 instead use a regular |syntax-case| form.
 
 There is an interesting problem that arises if we try to just expand
-the body directly. Because we are using syntax-case to do the matching,
+the body directly. Because we are using |syntax-case| to do the matching,
 the body that is expanded as a part of the first level (|value-form|)
 of expansion, will lead to a possible ellipses problem.
 Take the following body as an example:
@@ -176,7 +178,7 @@ Take the following body as an example:
 something like the following:
 
 \medskip\verbatim
-(@< (|List of a, b, and c|)
+(@@< (|List of a, b, and c|)
   (define-syntax a
     (syntax-rules ()
       [(_ e ...) (list 'e ...)]))
@@ -191,7 +193,7 @@ we will get something like this:
 (define-syntax (|List of a, b, and c| x)
   (syntax-case x ()
     [id (identifier? #'id)
-     (build-value-form #'id #'()
+     #'(build-value-form #'id #'()
        #'((define-syntax a
             (syntax-rules ()
               [(_ e ...) (list 'e ...)]))
@@ -207,19 +209,16 @@ expand the two body forms |(define...)| and |(a a b c)| with ellipses
 around them instead.
 
 @(runtime.ss@>=
-(meta define (value-form name captures body)
-	(with-syntax 
-			(	[name name]
-				[(c ...) captures]
-				[(b ...) body])
-		#'(define-syntax (name x)
-			(syntax-case x ()
-				[	id (identifier? #'id)
-					(build-value-form #'id #'(c ...) #'(((... ...) b) ...))]
-				[	(id . rest) (identifier? #'id)
-					(with-syntax
-							([form (build-value-form #'id #'(c ...) #'(((... ...) b) ...))])
-						#'(form . rest))]))))
+(define-syntax value-form
+	(syntax-rules ()
+		[	(_ name (c ...) body ...)
+			(define-syntax (name x)
+				(syntax-case x ()
+					[	id (identifier? #'id)
+						#'(build-value-form id (c ...) ((... ...) body) ...)]
+					[	(id . rest)
+						#'(	(build-value-form id (c ...) ((... ...) body) ...) 
+							. rest)]))]))
 
 @ When we work with the definition form, we want to use a similar linking
 technique as above. However, in this case, we need to link both exports
@@ -240,45 +239,41 @@ lexical (inner) scope, while the |oc ...| and |oe ...| are the same for
 the surrounding context (outer).
 
 @(runtime.ss@>=
-(meta define (build-definition-form id captures exports body)
-	(with-syntax 
-			(	[(body+ ...) body]
-				[(ic ...) captures]
-				[(oc ...) (datum->syntax id (syntax->list captures))]
-				[(ie ...) exports]
-				[(oe ...) (datum->syntax id (syntax->list exports))])
-		#'(module (oe ...)
-			(alias ic oc) ...
-			(module (ie ...) body+ ...)
-			(alias oe ie) ...)))
+(define-syntax (build-module-form x)
+	(syntax-case x ()
+		[	(_ id (ic ...) (ie ...) body ...)
+			(with-syntax 
+					(	[(oc ...) (datum->syntax #'id (syntax->datum #'(ic ...)))]
+						[(oe ...) (datum->syntax #'id (syntax->datum #'(ie ...)))])
+				#'(module (oe ...)
+					(alias ic oc) ...
+					(module (ie ...) body ...)
+					(alias oe ie) ...))]))
 
-@ And just as we did above, we implement the |module-form| procedure
-in the same way, taking care to escape the body elements.
+@ And just as we did above for the |value-form| macro, 
+we implement the |module-form| macro in the same way, 
+taking care to escape the body elements.
+Unlike the value form of our call, though, we never expect to have the 
+|name| identifier syntax referenced at the call position of a form, 
+as in |(name x y z)| because that is not a valid definition context. 
+Thus, we only need to define the first form where it appears as a lone 
+identifier reference in a definition context. 
 
 @(runtime.ss@>=
-(meta define (module-form name captures exports body)
-	(with-syntax 
-			(	[name name]
-				[(c ...) captures]
-				[(e ...) exports]
-				[(b ...) body])
-		#'(define-syntax (name x)
-			(syntax-case x ()
-				[	id (identifier? #'id)
-					(build-definition-form
-						#'id #'(c ...) #'(e ...) #'(((... ...) b) ...))]
-				[	(id . rest) (identifier? #'id)
-					(with-syntax
-							([form	(build-definition-form
-									#'id #'(c ...) #'(e ...) #'(((... ...) b) ...))])
-						#'(form . rest))]))]))
-
+(define-syntax module-form
+	(syntax-rules ()
+		[	(_ name (c ...) (e ...) body ...)
+			(define-syntax (name x)
+				(syntax-case x ()
+					[	id (identifier? #'id)
+						#'(build-module-form id (c ...) (e ...) ((... ...) body) ...)]))]))
+						
 @ And that concludes the definition of the runtime. We do want to mark
 the indirect exports for the |@@<| macro.
 
 @(runtime.ss@>=
 (indirect-export @@<
-	module-form value-form build-definition-form build-value-form link)
+	module-form value-form build-module-form build-value-form)
 )
 @q[cf]
 @q[of]:The Runtime Library
@@ -290,7 +285,7 @@ them to write their entire program in \ChezWEB{}.
 
 @(runtime.sls@>=
 (library (arcfide chezweb runtime)
-	(export @< =>)
+	(export @@< =>)
 	(import (chezscheme))
 	(include "runtime.ss"))
 @q[cf]
@@ -304,7 +299,7 @@ of tokens.
 $${\tt chezweb-tokenize} : port \rarrow token-list$$
 
 \noindent Fortunately, each and every token can be identified by
-reading usually only three characters%
+reading usually only three characters. 
 Each control code begins with an ampersand; most are only two characters,
 though the |@@>=| form has more.
 This makes it fairly
@@ -338,26 +333,42 @@ well. The list of tokens is accumulated in reverse order.
 @<Parse possible control code@>=
 (let ([nc (read-char port)])
 	(case nc
-		[	(#\@) (loop tokens (cons c cur))]
-		[	(#\q) (read-line port) (loop tokens cur)]
-		[	(#\space #\< #\p #\* #\e #\r #\( #\^ #\. #\: #\i #\c)
+		[	(#\@@) (loop tokens (cons c cur))]
+		[	(#\q) (get-line port) (loop tokens cur)]
+		[	(#\space #\< #\p #\* #\e #\r #\( #\^ #\. #\: #\i #\c) ;)
 			(let ([token (string->symbol (string c nc))])
 				(if	(null? cur)
 					(loop (cons token tokens) '())
 					(loop (cons* token (list->string (reverse cur)) tokens) '())))]
-		[	(#\>)
-			(let ([nnc (read-char port)])
-				(if	(char=? #\= nnc)
-					(if	(null? cur)
-						(loop (cons '@@>= tokens) '())
-						(loop 
-							(cons* '@@>= (list->string (reverse cur)) tokens)
-							'()))
-					(loop tokens (cons* nnc nc c cur))))]
+		[	(#\>) |Parse possible @@>= delimiter|]
 		[else
 			(if	(eof-object? nc)
 				(loop tokens cur)
-				(loop tokens (cons c cur)))]))
+				(loop tokens (cons* nc c cur)))]))
+
+@ When we encounter the sequence |@@>| in our system, we may have a 
+closing delimiter, but we won't know that until we read ahead a bit more. 
+When we do have a closing delimiter, we will ignore all of the characters 
+after that on the line. In essence, this is like having an implicit 
+|@@q| character sitting around. We do this in order to provide a clean 
+slate to the user when writing files, so that extraneous whitespace 
+is not inserted into a file if the programmer does not intend it. 
+Extraneous whitespace at the beginning of a file can cause problems 
+with things like scripts if the user is using the |@@(| control code to 
+generate the script file. 
+
+@c (port cur loop tokens c nc)
+@<Parse possible @@>= delimiter@>=
+(let ([nnc (read-char port)])
+	(if	(char=? #\= nnc)
+		(begin 
+			(get-line port)
+			(if	(null? cur)
+				(loop (cons '@@>= tokens) '())
+				(loop 
+					(cons* '@@>= (list->string (reverse cur)) tokens)
+					'())))
+		(loop tokens (cons* nnc nc c cur))))
 @q[cf]
 @q[of]:Tangling a WEB
 @* Tangling a WEB. Once we have this list of tokens, we can in turn
@@ -447,11 +458,15 @@ $$\vbox{
 	}
 }$$
 
-\noindent Since we store these as association lists, we should be careful
-how we work with them. To this end, we will create a set of basic abstractions
-on tables first, and use only these abstractions when working with the
-internal tables. These tables should not be visible or used by the outside
-world directly.
+\noindent We use hashtables for each table, but these hashtables are only 
+meant for internal use, and should never see the light of the outside 
+userspace. The only other gotcha to remember is that the tokens list 
+will return a string first only if there is something in the limbo 
+area of the file. If there is nothing in limbo, there will be a token first. 
+We want to loop arround assuming that we receive a token before any 
+string input, and we don't care about limbo when we tangle a file, 
+so when we seed the loop, we will take care to remove the initial 
+limbo string if there is any.
 
 @p
 (define (construct-chunk-tables token-list)
@@ -460,22 +475,38 @@ world directly.
 				[top-level (make-hashtable equal-hash equal?)]
 				[captures (make-eq-hashtable)])
 		(let loop 
-				(	[tokens token-list] 
+				(	[tokens 
+						(if	(string? (car token-list)) 
+							(cdr token-list)
+							token-list)] 
 					[current-captures '()]
 					[current-exports #f])
 			(if	(null? tokens)
 				(values top-level named captures)
-				(case (car tokens)
-					[	(|@@ | @@* @@e @@r @@^ @@. @@: @@q @@i)
-						(loop (cddr tokens))]
-					[	(@@p) 
-						|Extend default top-level|]
-					[	(@@<)
-						|Extend named chunk|]
-					[	(|@@(|)
-						|Extend file top-level|]
-					[	(@@c)
-						|Update the current captures|])))))
+				|Dispatch on control code|))))
+
+@ On each step of the loop, we will expect to have a single control code
+at the head of the |tokens| list. 
+Each time we iterate through the loop, we 
+should remove all of the strings and other elements related to that 
+control code, so that our next iteration will again encounter  
+a control code at the head of the list. 
+
+@c (loop tokens top-level current-captures current-exports named captures)
+@<Dispatch on control code@>=
+(case (car tokens)
+	[	(|@@ | @@* @@e @@r @@^ @@. @@: @@i)
+		(loop (cddr tokens) '() #f)]
+	[	(@@p) 
+		|Extend default top-level|]
+	[	(@@<)
+		|Extend named chunk|]
+	[	(|@@(|)
+		|Extend file top-level|]
+	[	(@@c)
+		|Update the current captures|]
+	[else
+		(error #f "Unexpected token" (car tokens) (cadr tokens))])
 
 @ Extending the default top level is the easiest. We just append the
 string that we find to the |*default*| key in the |top-level| table.
@@ -485,7 +516,7 @@ string that we find to the |*default*| key in the |top-level| table.
 (define body (cadr tokens))
 (unless (string? body)
 	(error #f "Expected a string body" body))
-(hashtable-update top-level '*default*
+(hashtable-update! top-level '*default*
 	(lambda (cur) (string-append cur body))
 	"")
 (loop (cddr tokens) '() #f)
@@ -500,7 +531,7 @@ and trailing whitespace from the name in question.
 @<Extend file top-level@>=
 |Verify and extract delimited chunk|
 (let ([name (strip-whitespace name)])
-	(hashtable-update top-level name
+	(hashtable-update! top-level name
 		(lambda (cur) (string-append cur body))
 		""))
 (loop (cddddr tokens) '() #f)
@@ -530,17 +561,17 @@ to distinguish it from an empty export form, which is a nil.
 (unless (string? (cadr tokens))
 	(error #f "Expected captures line" (cadr tokens)))
 (with-input-from-string (cadr tokens)
-		(lambda ()
-			(let* ([captures (read)] [arrow (read)] [exports (read)])
-				(unless (and (list? captures) (for-all symbol? captures))
-					(error #f "Expected list of identifiers for captures" captures))
-				(unless (and (eof-object? arrow) (eof-object? exports))
-					(unless (eq? '=> arrow)
-						(error #f "Expected =>" arrow))
-					(unless (and (list? exports) (for-all symbol? exports))
-						(error #f "Expected list of identifiers for exports" exports)))
-				(loop (cddr tokens) captures exports)))))
-
+	(lambda ()
+		(let* ([captures (read)] [arrow (read)] [exports (read)])
+			(unless (and (list? captures) (for-all symbol? captures))
+				(error #f "Expected list of identifiers for captures" captures))
+			(unless (and (eof-object? arrow) (eof-object? exports))
+				(unless (eq? '=> arrow)
+					(error #f "Expected =>" arrow))
+				(unless (and (list? exports) (for-all symbol? exports))
+					(error #f "Expected list of identifiers for exports" exports)))
+			(loop (cddr tokens) captures 
+				(and (not (eof-object? exports)) exports)))))
 
 @ When it comes to actually extending a named chunk, we will either have 
 nothing in the captures and exports forms, or we will have two lists 
@@ -574,15 +605,12 @@ captures list of |a b t| and the exports list to be |x y z u v|.
 @<Extend named chunk@>=
 |Verify and extract delimited chunk|
 (let ([name (string->symbol (strip-whitespace name))])
-	(hashtable-update named name
+	(hashtable-update! named name
 		(lambda (cur) (string-append cur body))
 		"")
-	(when current-captures 
-		(hashtable-update captures name
-			(lambda (cur) 
-				(cons	(append (car cur) current-captures)
-					|Extend exports list|))
-			(cons '() '()))))
+	(hashtable-update! captures name
+		(lambda (cur) |Extend captures and exports|)
+		#f))
 (loop (cddddr tokens) '() #f)
 
 @ We have to be careful about how we deal with the exports list. 
@@ -593,23 +621,28 @@ a value, and the second will have been written assuming that it will not.
 This causes a conflict, and we should not allow this sort of thing to happen. 
 In the above, we partially deal with this by assuming that if the chunk 
 has not been extended it is fine to extend it; this is equivalent to passing 
-the nil object as our default in the call to |hashtable-update|. On the other 
+the nil object as our default in the call to |hashtable-update!|. On the other 
 hand, we have to make sure that we give the right error if we do encounter 
 a false value if we don't expect one. That is, if we receive a pair in |cur| 
 whose |cdr| field is false, this means that the chunk was previously defined 
 and that this definition had no exports in it. We should then error out 
 if we have been given anything other than a false exports.
 
-@c (current-exports cur name)
-@<Extend exports list@>=
-(define exports (cdr cur))
-(when (and (not exports) current-exports)
+@c (current-exports current-captures cur name)
+@<Extend captures and exports@>=
+(define (union s1 s2) 
+	(fold-left (lambda (s e) (if (memq e s) s (cons e s))) s1 s2))
+(when (and cur (not (cdr cur)) current-exports)
 	(error #f "attempt to extend a value named chunk as a definition chunk"
 		name current-exports))
-(when (and exports (not current-exports))
+(when (and cur (cdr cur) (not current-exports))
 	(error #f "attempt to extend a definition chunk as a value chunk"
-		name))
-(and exports current-exports (union exports current-exports))
+		name (cdr cur)))
+
+(if	cur
+	(cons	(append (car cur) current-captures)
+		(and (cdr cur) (append (cdr cur) current-exports)))
+	(cons current-captures current-exports))
 
 @ It is probably very likely that someone will make a mistake in 
 specifying their chunk names at some point. It is human nature, and worse, 
@@ -622,11 +655,13 @@ a tokens list, since that nesting gets a bit deep.
 
 @c (tokens) => (name body)
 @<Verify and extract delimited chunk@>=
-(define name (cadr tokens))
-(define closer (caddr tokens))
-(define body (cadddr tokens))
-(unless (eq? '@>= closer)
-	(error #f "Expected closing @>=" closer))
+(define-values (name closer body)
+	(let ()
+		(unless (<= 4 (length tokens))
+			(error #f "Unexpected end of file" tokens))
+		(apply values (cdr (list-head tokens 4)))))
+(unless (eq? '@@>= closer)
+	(error #f "Expected closing @@>=" name closer body))
 (unless (string? name)
 	(error #f "Expected name string" name))
 (unless (string? body)
@@ -654,8 +689,8 @@ determine where the first non-whitespace character occurs in each direction.
   		(or	(and (not s) (not e) "")
   			(substring str s (1+ e)))))
 
-@ Now we have to create the actual output files. Each file that we 
-write will have the same basic shape and layout:
+@ Now we have to create the actual output files. The default output 
+file will have the following layout:
 
 $$\includegraphics[height=2in]{chezweb-1.eps}$$
 
@@ -666,40 +701,44 @@ Next, we put all of the chunks defined in the \WEB\ into the spot
 right below the runtime. Afterwards follows all of the top level 
 code.
 
-We do have a design decision to make at this point. We could walk
-through the code trying to find any reference to a chunk and then 
-only include those chunks that have been referenced. The motivation 
-for this would be to avoid including code that we don't need to include 
-in the tangled file. If we worked hard enough at it, then we could 
-also allow the user to rebind or redefine names that we bound to 
-chunk names in the \WEB\ but that were not referenced in the 
-specific file we are tangling. Unfortunately, a naive approach to 
-searching for chunk references will not catch these instances, 
-and arguably, we want the user to be aware when the user attempts 
-to rebind an identifier that has already been bound to the name 
-of a chunk. Indeed, because chunk names should be descriptive, 
-there would be very little reason for an user to every conflict 
-with the named chunks (automatically generated code being an 
-exception here). A conflict could be thought of as a programming 
-error; rather than letting the code silently fail, we will include 
-all of the named chunks into the output of every tangled file that 
-is written from a given \WEB{}. When this tangled file is included 
-into either a library or a module, where redefinitions are not 
-allowed, then the programmer will receive an error whenever 
-two bindings to the same name, or a named chunk conflict occur. 
+We do have a design decision to make at this point. What do we do 
+with all of the files that are written using |@@(| codes in our file? 
+It is not unreasonable to expect an user to want to use a chunk 
+in those files as well as in the main top-level default. However, it 
+is equally likely that the user may be trying to write a non-scheme 
+file or a file that needs to have a very specific format, such as a 
+library or a shell script. In these cases, having the runtime included 
+at the top level will not be very useful. If we automatically 
+include the runtime or any chunk definitions in the external file, 
+then the user will have no way of guaranteeing a certain file layout, 
+and this could break valid use cases for the |@@(| control code. 
 
-Using the above technique actually does nothing to our performance, 
-because the chunks are implemented as macros (identifier macros), 
-meaning that they exist only at macro expansion time. If a named 
-chunk is never referenced inside of a tangled file, then, it will never 
-appear in the runtime code, such as what is the result of 
-compiling a Scheme file. This means that we are encuring zero 
-runtime overhead for putting all of the chunks in our code, and 
-the code that we have to write will be much simpler, and likely 
-much less buggy. This is, overall, a good thing.
+Instead of doing this, we have taken the other approach. The user 
+will not have direct access to chunks in the external files. Instead, 
+if the user wishes to use those chunks in a given file, the main 
+tangled file will need to be included explicitly. This has some 
+disadvantages because the user will not be able to use the regular 
+chunking mechanism outside of the default top-level, but this is 
+mostly a matter of inconvenience rather than a reduction in 
+expressive power. Note that in \CWEB\ style programs, if we were 
+writing in C, this would be more of a hassle, because we may have 
+header files that we wanted to write externally. An equivalent 
+form in \ChezWEB\ files might be an R6RS library form. Here, we 
+might have wished to have a chunk that could refer to all of the 
+exports of a given library. However, while this technique would 
+be usable in a \CWEB\ system, it is not so usable in the \ChezWEB\ 
+approach because the chunks are Scheme code, not just strings of 
+text, and this makes such an use invalid even within the tangled 
+default top-level. Thus, we haven't really made the system any 
+less usable for such things than it already was.
+
+{\it In the future it might be nice to have the functionality 
+of unhygienic textual copy and paste, but such functionality is 
+for another time and place.}
 
 As a final note, we should remember to use the right mode for 
-our files. Since any tangled file is relying on Chez Scheme features, 
+our tangled file. 
+Since any tangled file is relying on Chez Scheme features, 
 we will need to ensure that Chez Scheme mode rather than R6RS 
 compatibility mode is enabled by putting the |#!chezscheme| 
 directive in there at the top of the file.
@@ -707,15 +746,18 @@ directive in there at the top of the file.
 We can thus sketch out a general process for writing out the 
 correct contents of a file that we are writing to.
 
-@c (output-file top-level-chunks named-chunks captures)
+@c (file output-file top-level-chunks named-chunks captures)
 @<Write tangled file contents@>=
 (call-with-output-file output-file
 	(lambda (output-port)
-		(put-string output-port "#!chezscheme\n\n")
-		(put-string output-port runtime-code)
-		|Write named chunks to file|
+		(when (eq? file '*default*)
+			(put-string output-port "#!chezscheme\n")
+			(put-string output-port runtime-code)
+			|Write named chunks to file|)
 		(put-string output-port
-			(hashtable-ref top-level-chunks output-file "")))
+			(hashtable-ref top-level-chunks 
+				(if (eq? file '*default*) '*default* output-file) 
+				"")))
 	'replace)
 
 @ For each named chunk that we find in the |named-chunks| hashtable,
@@ -744,10 +786,10 @@ definable in any order.
 	(lambda (name)
 		(let ([cell (hashtable-ref captures name '(() . #f))])
 			(format output-port
-				"(@< (~s ~{~s ~}) ~@[=> (~{~s ~})~]~n~s~n)~n"
+				"(@@< (~s ~{~s ~}) ~@@[=> (~{~s ~})~]~n~a)~n~n"
 				name (car cell) (cdr cell)
 				(hashtable-ref named-chunks name ""))))
-	(hashtable-keys named-chunks))
+	(vector->list (hashtable-keys named-chunks)))
 
 @ Now all of the pieces are in place to write the |tangle-file| procedure
 that we talked about previously. 
@@ -764,7 +806,7 @@ that we talked about previously.
 				(lambda (file)
 					(let ([output-file (if (eq? '*default* file) default-file file)])
 						|Write tangled file contents|))
-				(hashtable-keys top-level-chunks)))))
+				(vector->list (hashtable-keys top-level-chunks))))))
 @q[cf]
 @q[of]:Weaving a WEB
 @* Weaving a WEB.
