@@ -1,0 +1,4 @@
+#!/bin/sh
+
+./bootstrap.ss
+chmod +x cheztangle.ss

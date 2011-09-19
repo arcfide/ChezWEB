@@ -1,0 +1,5 @@
+#! /bin/sh
+
+./cheztangle.ss chezweb.w
+echo '(compile-program "cheztangle.ss")' | scheme -q
+mv cheztangle.so cheztangle
