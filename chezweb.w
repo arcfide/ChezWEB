@@ -412,7 +412,7 @@ cheztangle <web_file>
 of our important library functions will be installed in
 {\tt chezweb.ss}.
 
-@(cheztangle@>=
+@(cheztangle.ss@>=
 #! /usr/bin/env scheme-script
 (import (chezscheme))
 
