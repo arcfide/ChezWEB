@@ -1,28 +1,25 @@
-* Find a way of dealing with libraries
-* Implement Scribble
-* Concatenation for chunks
-* Cross-referencing of chunks
-* Non-hygienic chunks
-* Pretty printer for Scheme
+*	Cross-referencing of chunks
+*	Hierarchical section numbering
+*	Indexing
+*	Section index listings
+*	Find a way of dealing with libraries
+*	Implement Scribble
+*	Non-hygienic chunks
+*	Pretty printer for Scheme
 
 NEW OPERATORS FOR VERSION 2
 
-Runtime Operators
-
-      @<            Define Chunk
-
-Weave Operators
-
-      @p            Top level program
-      @             Untitled section
-      @*            Title section
-      @e            Evaluate 
-      @r            REPL Interaction
-      @@            Escaped @
-      @(            Write to file
-      @^            Index in roman type
-      @.            Index in typewriter type
-      @:            Index defined by \9
-      @q            Comment
-      @i            Include
-      @c            Captures and Exports
+	@<	Define Chunk	(Runtime)
+	@p	Top level program
+	@	Untitled section
+	@*	Title section
+	@e	Evaluate 
+	@r	REPL Interaction
+	@@	Escaped @
+	@(	Write to file
+	@^	Index in roman type
+	@.	Index in typewriter type
+	@:	Index defined by \9
+	@q	Comment
+	@i	Include
+	@c	Captures and Exports
