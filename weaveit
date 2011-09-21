@@ -1,0 +1,4 @@
+#! /bin/sh
+
+mpost chezweb.mp
+mv chezweb.1 chezweb-1.eps
