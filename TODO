@@ -6,20 +6,29 @@
 *	Implement Scribble
 *	Non-hygienic chunks
 *	Pretty printer for Scheme
+*	REPL printing in texts
+*	Include
+*	Deal with Unicode properly
+*	Add support for @> token for closing control codes.
+* Add a verification pass so that we don't have to verify the code in 
+	both weaving and tangling sections.
+
 
 NEW OPERATORS FOR VERSION 2
 
-	@<	Define Chunk	(Runtime)
-	@p	Top level program
-	@	Untitled section
 	@*	Title section
-	@e	Evaluate 
+	@	Untitled section
+	@<	Define Chunk	(Runtime)
+	@>=	Delimit chunk
+	@p	Top level program
+	@(	Write to file
+	@c	Captures and Exports
+	@f	Format 
 	@r	REPL Interaction
 	@@	Escaped @
-	@(	Write to file
 	@^	Index in roman type
 	@.	Index in typewriter type
 	@:	Index defined by \9
 	@q	Comment
 	@i	Include
-	@c	Captures and Exports
+	@>	Delimit code text
