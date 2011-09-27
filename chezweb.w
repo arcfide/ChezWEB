@@ -1,3 +1,5 @@
+\input graphicx
+
 \def\ChezWEB{Chez{\tt WEB}}
 \def\CWEB{{\tt CWEB}}
 \def\WEB{{\tt WEB}}
@@ -11,10 +13,10 @@
 
 @* Introduction. This document describes the implementation of the
 \ChezWEB\ system of documentation and programming. It is modelled
-closely after the WEB%
-\footnote{Knuth, ``WEB.''}
-and CWEB%
-\footnote{Author, ``CWEB.''}
+closely after the WEB
+%\footnote{Knuth, ``WEB.''}
+and CWEB
+%\footnote{Author, ``CWEB.''}
 systems. It allows a Chez Scheme programmer to write programs of
 higher quality and better documentation. It produces print-quality
 output for documents, and delivers programming convenience for doing
@@ -50,20 +52,19 @@ given chunk. These correspond to the normal hygienic conditions of
 hygiene proper and referential transparency. These properties may be
 stated casually as follows:
 
-\numberedlist
-\li {\bf Hygiene.}
+{\parindent = 1.5in
+\item{\bf Hygiene.}
 Any definition introduced in the body of the chunk that is not
 explicitly exported by the export and captures clauses is visible only
 within the scope of the chunk, and is not visible to any surround
 context that references the chunk.
 
-\li {\bf Referential Transparency.}
+\item{\bf Referential Transparency.}
 Any free reference that appears in the body of the chunk will refer to
 the nearest lexical binding of the tangled output unless they are
 explicitly enumerated in the captures clause, in which case, they will
 refer to the nearest binding in the context surrounding the chunk
-whenever the chunk is referenced.
-\endnumberedlist
+whenever the chunk is referenced.\par}
 
 \noindent A subtlety occurs in the actual use of the referential
 transparency property. Because the user does not have direct control
@@ -94,13 +95,13 @@ The macro itself takes the following syntax:
 \medskip\verbatim
 (@@< (name capture ...) body+ ...)
 (@@< (name capture ...) => (export ...) body+ ...)
-|endverbatim
-\medskip
+!endverbatim \medskip
+
 
 \noindent The first instance is the value form of a chunk. It binds
 |name| to an identifier syntax that will, when referenced, expand into
-a form that evaluates |body+ ...| in its own scope, where |capture
-...| are bound to the values visible in the surrounding
+a form that evaluates |body+ ...| in its own scope, where
+|capture ...| are bound to the values visible in the surrounding
 context (rather than lexically scoped), whose return value is the
 value of the last expression appearing in |body+ ...|.
 
@@ -131,8 +132,8 @@ macro that will expand into the following form:
 (let ()
   (alias ic oc) ...
   body+ ...)
-|endverbatim
-\medskip
+!endverbatim \medskip
+
 
 \noindent Notice the use of |ic ...| and |oc ...|. These are the
 inner/outer bindings that correspond exactly to one another except
@@ -169,8 +170,8 @@ problem.  Take the following body as an example:
   (syntax-rules ()
     [(_ e ...) (list 'e ...)]))
 (a a b c)
-|endverbatim
-\medskip
+!endverbatim \medskip
+
 
 \noindent This seems like it should be fine, and we expect that if we
 use something like the following:
@@ -181,8 +182,8 @@ use something like the following:
     (syntax-rules ()
       [(_ e ...) (list 'e ...)]))
   (a a b c))
-|endverbatim
-\medskip
+!endverbatim \medskip
+
 
 \noindent We might end up in some trouble. When run |value-form| on it,
 we will get something like this:
@@ -196,8 +197,8 @@ we will get something like this:
             (syntax-rules ()
               [(_ e ...) (list 'e ...)]))
                (a a b c)))]))
-|endverbatim
-\medskip
+!endverbatim \medskip
+
 
 \noindent Obviously, the above syntax doesn't work, because there is
 no pattern variable |e| in the pattern clause. This means that we will
@@ -228,8 +229,8 @@ both exports and captures. Furthermore, we need to expand into a
   (alias ic oc) ...
   (module (ie ...) body+ ...)
   (alias oe ie) ...)
-|endverbatim
-\medskip
+!endverbatim \medskip
+
 
 \noindent In this case, as in the value form, the |ic ...| and
 |ie ...| bindings are, respectively, the captures and exports of the
@@ -292,7 +293,7 @@ syntax, we need to parse it into tokens representing either control
 codes or text between control codes. We do this by implementing
 |chezweb-tokenize|, which takes a port and returns a list of tokens.
 
-$${\tt chezweb-tokenize} : port \rarrow token-list$$
+$${\tt chezweb-tokenize} : port \to token-list$$
 
 \noindent Fortunately, each and every token can be identified by
 reading usually only three characters.  Each control code begins with
@@ -370,12 +371,15 @@ can cause problems with things like scripts if the user is using the
 write a simple program to tangle the output. Tangling actually
 consists of several steps.
 
-\numberedlist
-\li Accumulate named chunks
-\li Gather file code and |@@p| code for output
-\li Prepend runtime to files
-\li Prepend named chunk definitions to those files that use those chunks
-\endnumberedlist
+\item{1.}
+Accumulate named chunks
+\item{2.}
+Gather file code and |@@p| code for output
+\item{3.}
+Prepend runtime to files
+\item{4.}
+Prepend named chunk definitions to those files that use those chunks
+
 
 \noindent For example, if we have not used the |@@(| control code,
 which allows us to send data to one or more files, then we will send
@@ -399,8 +403,8 @@ and generates the tangled output.
 
 \medskip\verbatim
 cheztangle <web_file>
-|endverbatim
-\medskip
+!endverbatim \medskip
+
 
 \noindent We will use an R6RS style program for this, assuming that
 all of our important library functions will be installed in {\tt
@@ -443,8 +447,8 @@ value chunks.
 $$\vbox{
   \offinterlineskip
   \halign{
-    \strut # & # & # \cr
-    {\bf Table} & {\bf Key Type} & {\bf Value Type}
+    \strut #\hfill & #\hfill & #\hfill \cr
+    {\bf Table} & {\bf Key Type} & {\bf Value Type} \cr
     \noalign{\hrule}
     Top-level & Filename or |*default*| & Code String \cr
     Named Chunk & Chunk Name Symbol & Code String \cr
@@ -539,8 +543,8 @@ The format of a captures form looks something like this:
 
 \medskip\verbatim
 @@c (c ...) [=> (e ...)]
-|endverbatim
-\medskip
+!endverbatim \medskip
+
 
 \noindent In the above, the exports are optional, and the captures
 could be empty. This will come in to us as a string, so we will
@@ -597,8 +601,8 @@ programmer can extend the chunks. So, for example:
 @@c (t) => (u v)
 @@<blah@@>=
 (define-values (u v) (list t t))
-|endverbatim
-\medskip
+!endverbatim \medskip
+
 
 \noindent In the above code example, we want the end result to have a 
 captures list of |a b t| and the exports list to be |x y z u v|. 
@@ -774,8 +778,8 @@ as stored in the table, then we want to output something like:
 (@@< (name clst ...) [=> (elst ...)]
 body
 )
-|endverbatim
-\medskip
+!endverbatim \medskip
+
 
 \noindent We grab the captures and exports from the |captures|
 hashtable and we are careful to ensure that we don't put any exports 
@@ -838,7 +842,7 @@ text or to instantiate code blocks. We weave output pretty much in
 order. We must keep track of the section number. Our macros that we
 can use for formatting these chunks are as follows.
 
-\medskip\item{N}
+\item{N}
 {\bf Starred Sections.} This allows for starred sections. It expects
 two integers as the first parameters. These are, respectively, the
 depth and the section number. After that, it will read up to the first
@@ -868,7 +872,7 @@ backspace one notch.
 \item{con}
 {\bf Sections.} Completes the section names.
 
-\medskip\noindent
+\noindent
 Each section has the same basic layout, where it will begin with
 either an N or an M macro, and end with {\tt fi}.
 
@@ -879,7 +883,7 @@ Let's examine the top-level loop that iterates over the tokens.
   (call-with-output-file (format "~a.tex" (path-root file))
     (lambda (port)
       |Define section iterator|
-      (format port "\\input chezwebmac~n\\input eplain~n~n")
+      (format port "\\input chezwebmac~n~n")
       (let loop ([tokens (call-with-input-file file
                            chezweb-tokenize)])
         (when (pair? tokens)
@@ -925,7 +929,7 @@ give the next section numbers in order.
 @c () => (next-section)
 @<Define section iterator@>=
 (define next-section
-  (let ([section 0])
+  (let ([section -1])
     (lambda ()
       (set! section (+ section 1))
       section)))
@@ -1068,8 +1072,8 @@ formatting follows a slightly more complicated template:
 \medskip\verbatim
 \Y\B\4\X<sectnum>:<name>\X${}\E{}$\6
 <code>\par<cap_exps>\fi
-|endverbatim
-\medskip
+!endverbatim \medskip
+
 
 \noindent The above form is basically the same for file chunks,
 except that we do some different things with the name of the file
@@ -1079,13 +1083,13 @@ manages the printing for both.
 @p
 (define (print-named-chunk port name code sectnum caps exps)
   (format port
-    "\\Y\\B\\4\\X~a:~a\\X${}\\E{}$\\6~n~a\\par~n~?~?~?"
+    "\\Y\\B\\4\\X~a:~a\\X${}\\E{}$\\6~n~a\\par~n~?~?"
     sectnum name (chezweb-pretty-print code)
-    "~@[This section captures ~{~a~^, ~}.~]"
+    "~@[\\CAP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~]"
     (list (and (not (null? caps)) caps))
-    "~@[\\6~]"
-    (list (and (not (null? caps)) exps))
-    "~@[This section exports ~{~a~^, ~}.~]"
+    ;"~@[\\6~]"
+    ;(list (and (not (null? caps)) exps))
+    "~@[\\EXP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~]"
     (list exps)))
 
 @ Now we can easily handle the named chunk.
@@ -1158,7 +1162,7 @@ implement the Chez Scheme pretty printer and avoid the whole
 question. Using the verbatim package also helps. In the eplain version
 of verbatim, you have to be careful to make sure that the vertical
 bars are doubled in case you end up with something that reads like
-{\tt ||endverbatim} which will stop the environment. Ironically,
+{\tt !endverbatim} which will stop the environment. Ironically,
 this very example is a case where you need the doubling.
 
 @p
@@ -1167,14 +1171,14 @@ this very example is a case where you need the doubling.
     (let loop ([code (string->list code)] [res '()])
       (cond
         [(null? code) (list->string (reverse res))]
-        [(char=? #\| (car code))
-         (loop (cdr code) (cons* #\| #\| res))]
+        [(char=? #\! (car code))
+         (loop (cdr code) (cons* #\! #\! res))]
         [else (loop (cdr code) (cons (car code) res))])))
   (with-output-to-string
     (lambda ()
       (printf "\\verbatim~n")
       (printf "~a" (double code))
-      (printf "|endverbatim "))))
+      (printf "!endverbatim "))))
 
 @ We also want to handle the printing of some of the section text. In
 this case, all of the vertical bars that are found in such text need
@@ -1186,18 +1190,15 @@ again.
 
 @p
 (define (texify-section-text text)
-  (define start (reverse (string->list "\\verbatim ")))
-  (define end (reverse (string->list "|endverbatim{}")))
   (let loop ([text (string->list text)] [res '()] [bar? #f])
     (cond
       [(null? text) (list->string (reverse res))]
       [(char=? #\| (car text))
-       (cond
-         [bar? (loop (cdr text) (append start res) #f)]
-         [(and (pair? (cdr text)) (char=? #\| (cadr text)))
-          (loop (cddr text) (cons #\| res) #f)]
-         [else
-           (loop (cdr text) (append end res) #t)])]
+       (loop (cdr text) (cons #\| res) (not bar?))]
+      [(char=? #\! (car text))
+       (if bar?
+           (loop (cdr text) (cons* #\! #\! res) bar?)
+           (loop (cdr text) (cons #\! res) bar?))]
       [else
         (loop (cdr text) (cons (car text) res) bar?)])))
 
