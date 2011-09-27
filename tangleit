@@ -1,5 +1,9 @@
 #! /bin/sh
 
 ./cheztangle.ss chezweb.w
+chmod +x cheztangle.ss
+chmod +x chezweave.ss
 echo '(compile-program "cheztangle.ss")' | scheme -q
+echo '(compile-program "chezweave.ss")' | scheme -q
 mv cheztangle.so cheztangle
+mv chezweave.so chezweave

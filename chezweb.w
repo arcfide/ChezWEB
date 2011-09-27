@@ -920,6 +920,7 @@ this work in a section iterator that is a nullary procedure. Calling
 this procedure gives back the current section number. Repeated calls
 give the next section numbers in order.
 
+@c () => (next-section)
 @<Define section iterator@>=
 (define next-section
   (let ([section 0])
@@ -983,7 +984,7 @@ depth in two separate values.
 (define (extract-number cur body)
   (cond
     [(null? body) (error #f "Section contains no body" orig)]
-    [(char-numberic? (car body))
+    [(char-numeric? (car body))
      (extract-number (cons (car body) cur) (cdr body))]
     [else
       (if (null? cur)
@@ -1122,6 +1123,30 @@ for. Namely, a file chunk does not have any captures or exports.
     (error #f "expected code body" body))
   (print-named-chunk port name body sectnum '() #f)
   (list-tail txttkns 4))
+
+@ We have now completely defined the |weave-file| procedure, which we
+will use in the {\tt chezweave} program. This program has the exact
+same signature and layout as the {\tt cheztangle} program, except that
+it uses |weave-file| instead of |tangle-file|.
+
+@(chezweave.ss@>=
+#! /usr/bin/env scheme-script
+(import (chezscheme))
+
+(module (weave-file)
+  (include "chezweb.ss"))
+
+(unless (= 1 (length (command-line-arguments)))
+  (printf "Usage: chezweave <web_file>\n")
+  (exit 1))
+
+(unless (file-exists? (car (command-line-arguments)))
+  (printf "Specified file '~a' does not exist.\n"
+    (car (command-line-arguments)))
+  (exit 1))
+
+(weave-file (car (command-line-arguments)))
+(exit 0)
 
 @* Pretty Printing. We want to implement some sort of pretty printing,
 but at the moment, that is still pretty difficult. Instead, we'll just

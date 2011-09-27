@@ -2,3 +2,4 @@
 
 ./bootstrap.ss
 chmod +x cheztangle.ss
+chmod +x chezweave.ss
