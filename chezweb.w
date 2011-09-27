@@ -388,7 +388,6 @@ name before finally tacking on the code for the file.
 The first step is to actually grab our runtime, which we will do when
 we compile the program:
 
-@c () => (runtime-code)
 @p
 (define-syntax (get-code x)
   (call-with-input-file "runtime.ss" get-string-all))
@@ -880,11 +879,14 @@ Let's examine the top-level loop that iterates over the tokens.
   (call-with-output-file (format "~a.tex" (path-root file))
     (lambda (port)
       |Define section iterator|
+      (format port "\\input chezwebmac~n\\input eplain~n~n")
       (let loop ([tokens (call-with-input-file file
                            chezweb-tokenize)])
         (when (pair? tokens)
           (call-with-values (lambda () |Process a section|)
-            loop))))))
+            loop)))
+      (format port "\\inx~n\\fin~n\\con~n"))
+    'replace))
 
 @ For any given section, we know exactly what to do by looking at
 the associated control code that started it. The only exception is
@@ -942,7 +944,7 @@ after it.
     maybe))
 (format port "\\M{~a}~a~n" sectnum (texify-section-text body))
 (let ([leftover |Weave optional code chunk|])
-  (format port "\\fi~n")
+  (format port "\\fi~n~n")
   leftover)
 
 @ Processing a starred section is not unlike processing a normal
@@ -957,7 +959,7 @@ section.
 (format port "\\N{~a}{~a}~a~n"
   depth sectnum (texify-section-text body))
 (let ([leftover |Weave optional code chunk|])
-  (format port "\\fi~n")
+  (format port "\\fi~n~n")
   leftover)
 
 @ When we tokenize our code, it recognizes the |@@*| sign, but it
@@ -979,7 +981,7 @@ depth in two separate values.
 (define (strip-whitespace lst)
   (cond
     [(null? lst) '()]
-    [(char-whitespace? lst) (strip-whitespace (cdr lst))]
+    [(char-whitespace? (car lst)) (strip-whitespace (cdr lst))]
     [else lst]))
 (define (extract-number cur body)
   (cond
@@ -988,14 +990,14 @@ depth in two separate values.
      (extract-number (cons (car body) cur) (cdr body))]
     [else
       (if (null? cur)
-          (values 1 body)
+          (values 1 (list->string body))
           (values
             (string->number (list->string (reverse cur)))
-            body))]))
+            (list->string body)))]))
 (let ([body (strip-whitespace (string->list orig))])
   (cond
     [(null? body) (error #f "Section contains no body" orig)]
-    [(char=? #\* (car body)) (values 0 (cdr body))]
+    [(char=? #\* (car body)) (values 0 (list->string (cdr body)))]
     [else (extract-number '() body)]))
 
 @ After we weave the textual part of the sections, we need to handle
@@ -1038,7 +1040,7 @@ complete the section.
 (unless (and (pair? (cdr txttkns)) (string? (cadr txttkns)))
   (error #f "expected program body"
     (list-head txttkns (min (length txttkns) 2))))
-(format port "\\Y\\B ~a \\par~n\\fi~n"
+(format port "\\Y\\B ~a \\par~n"
   (chezweb-pretty-print (cadr txttkns)))
 (cddr txttkns)
 
@@ -1077,14 +1079,14 @@ manages the printing for both.
 @p
 (define (print-named-chunk port name code sectnum caps exps)
   (format port
-    "\\Y\\B\\4\\X~a:~a\\X${}\\E{}$\\6~n~a\\par~n~@?~@?~@?\\fi~n"
+    "\\Y\\B\\4\\X~a:~a\\X${}\\E{}$\\6~n~a\\par~n~?~?~?"
     sectnum name (chezweb-pretty-print code)
     "~@[This section captures ~{~a~^, ~}.~]"
-    (and (not (null? caps)) caps)
+    (list (and (not (null? caps)) caps))
     "~@[\\6~]"
-    (and (not (null? caps)) exps)
+    (list (and (not (null? caps)) exps))
     "~@[This section exports ~{~a~^, ~}.~]"
-    exps))
+    (list exps)))
 
 @ Now we can easily handle the named chunk.
 
@@ -1101,7 +1103,8 @@ manages the printing for both.
     (error #f "expected delimiter @@>=" delim))
   (unless (string? body)
     (error #f "expected code body" body))
-  (print-named-chunk port name body sectnum captures exports)
+  (print-named-chunk
+    port (texify-section-text name) body sectnum captures exports)
   (list-tail txttkns 4))
 
 @ And we can use the same basic techniques to handle the file
@@ -1121,7 +1124,8 @@ for. Namely, a file chunk does not have any captures or exports.
     (error #f "expected delimiter @@>=" delim))
   (unless (string? body)
     (error #f "expected code body" body))
-  (print-named-chunk port name body sectnum '() #f)
+  (print-named-chunk
+    port (texify-filename name) body sectnum '() #f)
   (list-tail txttkns 4))
 
 @ We have now completely defined the |weave-file| procedure, which we
@@ -1168,9 +1172,9 @@ this very example is a case where you need the doubling.
         [else (loop (cdr code) (cons (car code) res))])))
   (with-output-to-string
     (lambda ()
-      (printf "~n\\verbatim~n")
-      (pretty-print (double code))
-      (printf "|endverbatim~n"))))
+      (printf "\\verbatim~n")
+      (printf "~a" (double code))
+      (printf "|endverbatim "))))
 
 @ We also want to handle the printing of some of the section text. In
 this case, all of the vertical bars that are found in such text need
@@ -1189,13 +1193,21 @@ again.
       [(null? text) (list->string (reverse res))]
       [(char=? #\| (car text))
        (cond
-         [bar? (loop (cdr text) (append end res) #f)]
+         [bar? (loop (cdr text) (append start res) #f)]
          [(and (pair? (cdr text)) (char=? #\| (cadr text)))
           (loop (cddr text) (cons #\| res) #f)]
          [else
-           (loop (cdr text) (append start res) #t)])]
+           (loop (cdr text) (append end res) #t)])]
       [else
         (loop (cdr text) (cons (car text) res) bar?)])))
+
+@ When we have a file chunk, we format the text of the name
+of the chunk differently than with a named chunk. We wrap it in
+italics and so forth using the double backslash macro.
+
+@p
+(define (texify-filename txt)
+  (format "\\\\{~a}" txt))
 
 @* Handling the indexing.
 
