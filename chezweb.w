@@ -1,22 +1,15 @@
 \input graphicx
 
-\def\ChezWEB{Chez{\tt WEB}}
-\def\CWEB{{\tt CWEB}}
-\def\WEB{{\tt WEB}}
-
-\font\rm = "STIXGeneral" at 12pt
-
-\hoffset = 0.5in
-\voffset = 0.5in
-\hsize = 5.5in
-\vsize = 8in
+\def\ChezWEB{Chez\.{WEB}}
+\def\CWEB{\.{CWEB}}
+\def\WEB{\.{WEB}}
 
 @* Introduction. This document describes the implementation of the
 \ChezWEB\ system of documentation and programming. It is modelled
-closely after the WEB
+closely after the \WEB\
 %\footnote{Knuth, ``WEB.''}
-and CWEB
-%\footnote{Author, ``CWEB.''}
+and \CWEB\
+%\footnote{Author, ``\CWEB\.''}
 systems. It allows a Chez Scheme programmer to write programs of
 higher quality and better documentation. It produces print-quality
 output for documents, and delivers programming convenience for doing
@@ -52,27 +45,27 @@ given chunk. These correspond to the normal hygienic conditions of
 hygiene proper and referential transparency. These properties may be
 stated casually as follows:
 
-{\parindent = 1.5in
-\item{\bf Hygiene.}
+\medskip{\narrower\noindent
+{\bf Hygiene.}
 Any definition introduced in the body of the chunk that is not
 explicitly exported by the export and captures clauses is visible only
 within the scope of the chunk, and is not visible to any surround
 context that references the chunk.
 
-\item{\bf Referential Transparency.}
+\smallskip\noindent{\bf Referential Transparency.}
 Any free reference that appears in the body of the chunk will refer to
 the nearest lexical binding of the tangled output unless they are
 explicitly enumerated in the captures clause, in which case, they will
 refer to the nearest binding in the context surrounding the chunk
-whenever the chunk is referenced.\par}
+whenever the chunk is referenced.\par}\medskip
 
 \noindent A subtlety occurs in the actual use of the referential
 transparency property. Because the user does not have direct control
-over the location of the chunk definitions when tangling a WEB file,
+over the location of the chunk definitions when tangling a \WEB\ file,
 this means that there is a more restricted notion of what the scope is
 for a chunk than would be normally if the tangling runtime were used
 as a program time entity. On the other hand, this restriction only
-applies to the specific way in which \ChezWEB\ combines/tangles a WEB
+applies to the specific way in which \ChezWEB\ combines/tangles a \WEB\
 file, and it does not apply to how an user may use the chunking
 mechanism. Users may, in fact, place chunk definitions arbitrarily in
 their own code, if they would like to do so. In this case, the
@@ -80,7 +73,7 @@ referential transparency property must still hold in its full
 generality.
 
 In the case when we are only dealing with chunks defined through the
-WEB mechanism and tangled explicitly, the result is that all chunks
+\WEB\ mechanism and tangled explicitly, the result is that all chunks
 will be defined at the top level of the file after the definition of
 the runtime, but before the inclusion of any other top level
 elements. This means that in practice, the lexical scope of any free
@@ -96,7 +89,6 @@ The macro itself takes the following syntax:
 (@@< (name capture ...) body+ ...)
 (@@< (name capture ...) => (export ...) body+ ...)
 !endverbatim \medskip
-
 
 \noindent The first instance is the value form of a chunk. It binds
 |name| to an identifier syntax that will, when referenced, expand into
@@ -133,7 +125,6 @@ macro that will expand into the following form:
   (alias ic oc) ...
   body+ ...)
 !endverbatim \medskip
-
 
 \noindent Notice the use of |ic ...| and |oc ...|. These are the
 inner/outer bindings that correspond exactly to one another except
@@ -172,7 +163,6 @@ problem.  Take the following body as an example:
 (a a b c)
 !endverbatim \medskip
 
-
 \noindent This seems like it should be fine, and we expect that if we
 use something like the following:
 
@@ -183,7 +173,6 @@ use something like the following:
       [(_ e ...) (list 'e ...)]))
   (a a b c))
 !endverbatim \medskip
-
 
 \noindent We might end up in some trouble. When run |value-form| on it,
 we will get something like this:
@@ -199,13 +188,12 @@ we will get something like this:
                (a a b c)))]))
 !endverbatim \medskip
 
-
 \noindent Obviously, the above syntax doesn't work, because there is
 no pattern variable |e| in the pattern clause. This means that we will
 get an error about an extra ellipses. What we need to do, when we run
 |value-form|, is to make sure that the expanded code escapes the
-ellipses, so we would expand the two body forms |(define...)| and |(a
-a b c)| with ellipses around them instead.
+ellipses, so we would expand the two body forms |(define...)| and
+|(a a b c)| with ellipses around them instead.
 
 @(runtime.ss@>=
 (define-syntax value-form
@@ -230,7 +218,6 @@ both exports and captures. Furthermore, we need to expand into a
   (module (ie ...) body+ ...)
   (alias oe ie) ...)
 !endverbatim \medskip
-
 
 \noindent In this case, as in the value form, the |ic ...| and
 |ie ...| bindings are, respectively, the captures and exports of the
@@ -288,12 +275,12 @@ actually requiring them to write their entire program in \ChezWEB{}.
   (import (chezscheme))
   (include "runtime.ss"))
 
-@* Tokenizing \WEB\ files. If one writes a \ChezWEB\ file in the \WEB\
+@* Tokenizing WEB files. If one writes a \ChezWEB\ file in the \WEB\
 syntax, we need to parse it into tokens representing either control
 codes or text between control codes. We do this by implementing
 |chezweb-tokenize|, which takes a port and returns a list of tokens.
 
-$${\tt chezweb-tokenize} : port \to token-list$$
+$$\.{chezweb-tokenize} : port \to \\{token-list}$$
 
 \noindent Fortunately, each and every token can be identified by
 reading usually only three characters.  Each control code begins with
@@ -371,6 +358,7 @@ can cause problems with things like scripts if the user is using the
 write a simple program to tangle the output. Tangling actually
 consists of several steps.
 
+\medskip{\parindent = 2em
 \item{1.}
 Accumulate named chunks
 \item{2.}
@@ -379,7 +367,7 @@ Gather file code and |@@p| code for output
 Prepend runtime to files
 \item{4.}
 Prepend named chunk definitions to those files that use those chunks
-
+\par}\medskip
 
 \noindent For example, if we have not used the |@@(| control code,
 which allows us to send data to one or more files, then we will send
@@ -404,7 +392,6 @@ and generates the tangled output.
 \medskip\verbatim
 cheztangle <web_file>
 !endverbatim \medskip
-
 
 \noindent We will use an R6RS style program for this, assuming that
 all of our important library functions will be installed in {\tt
@@ -545,7 +532,6 @@ The format of a captures form looks something like this:
 @@c (c ...) [=> (e ...)]
 !endverbatim \medskip
 
-
 \noindent In the above, the exports are optional, and the captures
 could be empty. This will come in to us as a string, so we will
 need a way to convert it into a data representation that we can use.
@@ -603,7 +589,6 @@ programmer can extend the chunks. So, for example:
 (define-values (u v) (list t t))
 !endverbatim \medskip
 
-
 \noindent In the above code example, we want the end result to have a 
 captures list of |a b t| and the exports list to be |x y z u v|. 
 
@@ -646,7 +631,6 @@ out if we have been given anything other than a false exports.
 (when (and cur (cdr cur) (not current-exports))
   (error #f "attempt to extend a definition chunk as a value chunk"
     name (cdr cur)))
-
 (if cur
     (cons
       (append (car cur) current-captures)
@@ -701,7 +685,7 @@ non-whitespace character occurs in each direction.
 @ Now we have to create the actual output files. The default output 
 file will have the following layout:
 
-$$\includegraphics[height=2in]{chezweb-1.eps}$$
+$$\includegraphics[height=1.25in]{chezweb-1.eps}$$
 
 \noindent The above diagram illustrates the relative positions of the 
 three important pieces of a tangled file. In the first piece, we just 
@@ -780,7 +764,6 @@ body
 )
 !endverbatim \medskip
 
-
 \noindent We grab the captures and exports from the |captures|
 hashtable and we are careful to ensure that we don't put any exports 
 in the form unless we intend to do so.
@@ -821,7 +804,7 @@ procedure that we talked about previously.
 program like Xe\TeX\ can be used on the resulting \TeX\ file that
 {\tt chezweave} outputs to make the PDF.
 
-$${\tt Missing figure here.}$$
+$$\\{Missing figure here.}$$
 % $$\includegraphics[width=???]{chezweb-2.eps}$$
 
 \noindent There are three distinct elements that make up
@@ -842,6 +825,7 @@ text or to instantiate code blocks. We weave output pretty much in
 order. We must keep track of the section number. Our macros that we
 can use for formatting these chunks are as follows.
 
+\medskip{\parindent = 2.5em
 \item{N}
 {\bf Starred Sections.} This allows for starred sections. It expects
 two integers as the first parameters. These are, respectively, the
@@ -859,7 +843,7 @@ the text and code parts of a section.
 \item{X}
 {\bf Chunk Name.} Used to typeset a chunk name in a section, either
 for files or for named chunks. It expects a section number, followed
-by a colon, followed by another {\tt \X}.
+by a colon, followed by another \.{X}.
 \item{4}
 {\bf Backspace.} This is used to backspace a bit, basically, to
 backspace one notch.
@@ -870,7 +854,7 @@ backspace one notch.
 \item{fin}
 {\bf Finish.} Ends the index.
 \item{con}
-{\bf Sections.} Completes the section names.
+{\bf Sections.} Completes the section names.\par}\medskip
 
 \noindent
 Each section has the same basic layout, where it will begin with
@@ -898,7 +882,7 @@ limbo, where there is no initial code prefixing its content. For limbo
 we insert the code block literally into the output. We can divide our
 sections and chunks into the following taxonomy:
 
-$${\tt Missing figure here.}$$
+$$\\{Missing figure here.}$$
 %$$\includegraphics[width=???]{chezweb-3.eps}$$
 
 \noindent Note that we do not allow a code section to immediately
@@ -1074,7 +1058,6 @@ formatting follows a slightly more complicated template:
 <code>\par<cap_exps>\fi
 !endverbatim \medskip
 
-
 \noindent The above form is basically the same for file chunks,
 except that we do some different things with the name of the file
 in terms of formatting. This means we can abstract away the code that
@@ -1158,11 +1141,12 @@ it uses |weave-file| instead of |tangle-file|.
 
 @* Pretty Printing. We want to implement some sort of pretty printing,
 but at the moment, that is still pretty difficult. Instead, we'll just
-implement the Chez Scheme pretty printer and avoid the whole
-question. Using the verbatim package also helps. In the eplain version
-of verbatim, you have to be careful to make sure that the vertical
-bars are doubled in case you end up with something that reads like
-{\tt !endverbatim} which will stop the environment. Ironically,
+insert everything verbatim and avoid the entire question.
+Using the verbatim package also helps. In the version of verbatim
+that we are using,
+you have to be careful to make sure that the exclamation marks
+are doubled in case you end up with something that reads like
+{\tt !endverbatim} which will stop the environment. Funnily enough,
 this very example is a case where you need the doubling.
 
 @p
@@ -1182,11 +1166,10 @@ this very example is a case where you need the doubling.
 
 @ We also want to handle the printing of some of the section text. In
 this case, all of the vertical bars that are found in such text need
-to be handled. Two bars directly next to one another means to insert a
-literal bar, but if they are separated, then it means that you want to
-typeset or pretty print the code in there. Since we don't have the
-full pretty printer enabled yet, we'll just use the verbatim package
-again.
+to be handled. Text inside of the vertical bars should be escaped
+so that the user doesn't accidently trigger the special mode of
+the verbatim mode, which is done with an exclamation mark. We can
+escaped the exclamation marks by doubling them. 
 
 @p
 (define (texify-section-text text)
@@ -1210,7 +1193,7 @@ italics and so forth using the double backslash macro.
 (define (texify-filename txt)
   (format "\\\\{~a}" txt))
 
-@* Handling the indexing.
+@* Handling the indexing. 
 
 @* TeX Macros.
 
