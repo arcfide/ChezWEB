@@ -115,13 +115,12 @@
 )
 
 (@< (|Extend default top-level| loop tokens top-level)
-(define body (cadr tokens))
-(unless (string? body)
-  (error #f "Expected a string body" body))
+(define (encode x) (format "|~a|" x))
+(define-values (ntkns body) (slurp-code (cdr tokens) encode))
 (hashtable-update! top-level '*default*
   (lambda (cur) (string-append cur body))
   "")
-(loop (cddr tokens) '() #f)
+(loop ntkns '() #f)
 )
 
 (@< (|Extend file top-level| loop tokens top-level)
@@ -130,7 +129,7 @@
   (hashtable-update! top-level name
     (lambda (cur) (string-append cur body))
     ""))
-(loop (cddddr tokens) '() #f)
+(loop tknsrest '() #f)
 )
 
 (@< (|Update the current captures| loop tokens)
@@ -160,7 +159,7 @@
   (hashtable-update! captures name
     (lambda (cur) |Extend captures and exports|)
     #f))
-(loop (cddddr tokens) '() #f)
+(loop tknsrest '() #f)
 )
 
 (@< (|Extend captures and exports|
@@ -180,18 +179,19 @@
   (cons current-captures current-exports))
 )
 
-(@< (|Verify and extract delimited chunk| tokens) => (name body)
-(define-values (name closer body)
+(@< (|Verify and extract delimited chunk| tokens) => (name body tknsrest)
+(define (encode x) (format "|~a|" x))
+(define-values (name body tknsrest)
   (let ()
     (unless (<= 4 (length tokens))
-      (error #f "Unexpected end of file" tokens))
-    (apply values (cdr (list-head tokens 4)))))
-(unless (eq? '@>= closer)
-  (error #f "Expected closing @>=" name closer body))
-(unless (string? name)
-  (error #f "Expected name string" name))
-(unless (string? body)
-  (error #f "Expected string body" body))
+      (error #f "unexpected end of file" tokens))
+    (let ([name (list-ref tokens 1)] [closer (list-ref tokens 2)]) 
+      (unless (eq? '@>= closer)
+        (error #f "Expected closing @>=" name closer body)) 
+      (unless (string? name)
+        (error #f "Expected name string" name))
+      (let-values ([(ntkns body) (slurp-code (list-tail tokens 3) encode)])
+        (values name body ntkns)))))
 )
 
 (@< (|Write tangled file contents|
@@ -228,6 +228,16 @@
         (hashtable-ref named-chunks name ""))))
   (vector->list (hashtable-keys named-chunks)))
 )
+
+(@< (|Verify chunk reference syntax| tokens)
+(unless (<= 3 (length tokens))
+  (error #f "unexpected end of token stream" tokens))
+(unless (string? (cadr tokens))
+  (error #f "expected chunk name" (list-head tokens 2)))
+(unless (eq? '@@> (caddr tokens))
+  (error #f "expected chunk closer" (list-head tokens 3)))
+)
+
 
 ;;; All of the top-level code goes here
 
@@ -368,6 +378,25 @@
            (loop (cdr tokens) (cons (car tokens) res)))]
       [else
         (loop (cdr tokens) (cons (car tokens) res))])))
+
+(define (slurp-code tokens encode)
+  (define (verify x)
+    (when (zero? (string-length x))
+      (error #f "expected code body" 
+        (list-head tokens (min (length tokens) 3))))
+    x)
+  (let loop ([tokens tokens] [res ""])
+    (cond
+      [(null? tokens) (values '() (verify res))]
+      [(string? (car tokens))
+       (loop (cdr tokens) (string-append res (car tokens)))]
+      [(eq? '@@< (car tokens))
+       |Verify chunk reference syntax|
+       (loop (cdddr tokens)
+         (string-append
+           res (encode (strip-whitespace (cadr tokens)))))]
+      [else (values tokens (verify res))])))
+
 
 (tangle-file "chezweb.w")
 (exit 0)
