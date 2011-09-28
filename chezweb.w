@@ -1799,7 +1799,8 @@ from, depending on the closing delimiter.
           [(@@>) (make-section-info type defs (cons sectnum refs))]
           [(@@>=) (make-section-info type (cons sectnum defs) refs)]
           [else (error #f "this can't happen")])))
-    (make-section-info #f '() '())))
+    (make-section-info #f '() '()))
+  (loop (list-tail tokens 3) sectnum))
 
 @ When we have finally built the entire section index, we will generate
 the file
