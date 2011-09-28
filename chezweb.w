@@ -1404,7 +1404,7 @@ complete the section.
 
 @c (port txttkns sectnum encode)
 @<Weave program chunk@>=
-(let-values ([(rest body) (slurp-code (cdr txttkns) encode double-bangs)])
+(let-values ([(rest body) (slurp-code (cdr txttkns) encode texify-code)])
   (format port "\\Y\\B ~a \\par~n" (chezweb-pretty-print body))
   rest)
 
@@ -1463,7 +1463,7 @@ manages the printing for both.
   (unless (eq? '@@>= delim)
     (error #f "expected delimiter @@>=" delim))
   (let-values ([(rest body) 
-                (slurp-code (list-tail txttkns 3) encode double-bangs)])
+                (slurp-code (list-tail txttkns 3) encode texify-code)])
     (print-named-chunk
       port (texify-section-text name) body sectnum captures exports)
     rest))
@@ -1483,7 +1483,7 @@ for. Namely, a file chunk does not have any captures or exports.
   (unless (eq? '@@>= delim)
     (error #f "expected delimiter @@>=" delim))
   (let-values ([(rest body) 
-                (slurp-code (list-tail txttkns 3) encode double-bangs)])
+                (slurp-code (list-tail txttkns 3) encode texify-code)])
     (print-named-chunk
       port (texify-filename name) body sectnum '() #f)
     rest))
@@ -1520,16 +1520,16 @@ We are assuming here that our code has been safely processed through
 something that properly escapes any of the special verbatim codes when 
 it needs to. That is, we want the code to be preprocessed for the
 verbatim environment. To help any programs that want to handle that, we
-define the |double-bangs| procedure here that cleans up the code for the
-verbatim environment by escaping out the exclamation marks in the text.
+define the |texify-code| procedure here that cleans up the code for the
+verbatim environment by escaping out the exclamation marks in the text 
+and other baddies.
 
 @p
-(define (double-bangs code)
+(define (texify-code code)
   (let loop ([code (string->list code)] [res '()])
     (cond
       [(null? code) (list->string (reverse res))]
-      [(char=? #\! (car code))
-       (loop (cdr code) (cons* #\! #\! res))]
+      [(char=? #\! (car code)) (loop (cdr code) (cons* #\! #\! res))]
       [else (loop (cdr code) (cons (car code) res))])))
 (define (chezweb-pretty-print code)
   (with-output-to-string
@@ -1831,11 +1831,11 @@ database.
 @<Define weave chunk reference encoder@>=
 (define (encode x)
   (let ([res (hashtable-ref sections x (make-section-info '@@< '() '()))])
-    (format "!!X~a:~?!!X"
+    (format "!X~a:~?!X"
       (let ([defs (section-info-defs res)])
         (if (null? defs) "" (car defs)))
       (let ([type (section-info-type res)])
-        (case type [(@@<) "~a"] [(@@|(|) "\\\\{~a}"])) ; )
+        (case type [(@@<) "!rm ~a!tt"] [(@@|(|) "\\\\{~a}"])) ; )
       (list x))))
 
 @* TeX Macros.
