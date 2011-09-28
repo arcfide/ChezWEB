@@ -1,6 +1,4 @@
 * Cross-referencing of chunks
-* Hierarchical section numbering
-* Indexing
 * Section index listings
 * Find a way of dealing with libraries
 * Implement Scribble
@@ -9,7 +7,6 @@
 * REPL printing in texts
 * Include
 * Deal with Unicode properly
-* Add support for @> token for closing control codes.
 * Add a verification pass so that we don't have to verify the code in 
   both weaving and tangling sections.
 
