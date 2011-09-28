@@ -1,5 +1,0 @@
-#! /usr/bin/env scheme-script
-(import 
-  (only (chezscheme) apply command-line-arguments scheme-start)
-  (arcfide chezweb weave))
-(apply (scheme-start) (command-line-arguments))
