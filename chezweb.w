@@ -574,7 +574,7 @@ directly. We do this without much abstraction below.
            (if (null? cur)
                tokens
                (cons (list->string (reverse cur)) tokens)))]
-        [(char=? #\@@ c) |Parse possible control code|]
+        [(char=? #\@@ c) @<Parse possible control code@>]
         [else (loop tokens (cons c cur))]))))
 
 @ Most of the control codes can be determined by reading ahead only
@@ -600,7 +600,7 @@ tokens as well. The list of tokens is accumulated in reverse order.
            (loop
              (cons* token (list->string (reverse cur)) tokens)
              '())))]
-    [(#\>) |Parse possible @@>= delimiter|]
+    [(#\>) @<Parse possible @@>= delimiter@>]
     [else
       (if (eof-object? nc)
           (loop tokens cur)
@@ -667,7 +667,7 @@ and the other, the code body itself as a single string.
       [(string? (car tokens))
        (loop (cdr tokens) (string-append res (car tokens)))]
       [(eq? '@@< (car tokens))
-       |Verify chunk reference syntax|
+       @<Verify chunk reference syntax@>
        (loop (cdddr tokens)
          (string-append
            res (encode (strip-whitespace (cadr tokens)))))]
@@ -809,7 +809,7 @@ the initial limbo string if there is any.
          [current-exports #f])
       (if (null? tokens)
           (values top-level named captures)
-          |Dispatch on control code|))))
+          @<Dispatch on control code@>))))
 
 @ On each step of the loop, we will expect to have a single control
 code at the head of the |tokens| list.  Each time we iterate through
@@ -822,10 +822,10 @@ encounter a control code at the head of the list.
 @<Dispatch on control code@>=
 (case (car tokens)
   [(|@@ | @@* @@e @@r @@^ @@. @@: @@i) (loop (cddr tokens) '() #f)]
-  [(@@p) |Extend default top-level|]
-  [(@@<) |Extend named chunk|]
-  [(|@@(|) |Extend file top-level|]
-  [(@@c) |Update the current captures|]
+  [(@@p) @<Extend default top-level@>]
+  [(@@<) @<Extend named chunk@>]
+  [(|@@(|) @<Extend file top-level@>]
+  [(@@c) @<Update the current captures@>]
   [else
     (error #f "Unexpected token" (car tokens) (cadr tokens))])
 
@@ -850,7 +850,7 @@ the name in question.
 
 @c (loop tokens top-level)
 @<Extend file top-level@>=
-|Verify and extract delimited chunk|
+@<Verify and extract delimited chunk@>
 (let ([name (strip-whitespace name)])
   (hashtable-update! top-level name
     (lambda (cur) (string-append cur body))
@@ -933,13 +933,13 @@ captures list of |a b t| and the exports list to be |x y z u v|.
 
 @c (loop tokens named current-captures current-exports captures)
 @<Extend named chunk@>=
-|Verify and extract delimited chunk|
+@<Verify and extract delimited chunk@>
 (let ([name (string->symbol (strip-whitespace name))])
   (hashtable-update! named name
     (lambda (cur) (string-append cur body))
     "")
   (hashtable-update! captures name
-    (lambda (cur) |Extend captures and exports|)
+    (lambda (cur) @<Extend captures and exports@>)
     #f))
 (loop tknsrest '() #f)
 
@@ -994,7 +994,7 @@ later referred to as |name| and |body| rather than as |car|s and
       (error #f "unexpected end of file" tokens))
     (let ([name (list-ref tokens 1)] [closer (list-ref tokens 2)]) 
       (unless (eq? '@@>= closer)
-        (error #f "Expected closing @@>=" name closer body)) 
+        (error #f "Expected closing @@>=" name closer)) 
       (unless (string? name)
         (error #f "Expected name string" name))
       (let-values ([(ntkns body) (slurp-code (list-tail tokens 3) encode)])
@@ -1087,7 +1087,7 @@ correct contents of a file that we are writing to.
     (when (eq? file '*default*)
       (put-string output-port "#!chezscheme\n")
       (put-string output-port runtime-code)
-      |Write named chunks to file|)
+      @<Write named chunks to file@>)
     (put-string output-port
       (hashtable-ref top-level-chunks 
         (if (eq? file '*default*) '*default* output-file) 
@@ -1144,7 +1144,7 @@ forms, or the like.
         (lambda (file)
           (let ([output-file (if (eq? '*default* file)
                                  default-file file)])
-            |Write tangled file contents|))
+            @<Write tangled file contents@>))
         (vector->list (hashtable-keys top-level-chunks))))))
 
 @* Weaving a WEB. Weaving is the process of converting or compiling a
@@ -1224,16 +1224,16 @@ Let's examine the top-level loop that iterates over the tokens.
 (define (weave-file file)
   (call-with-output-file (format "~a.tex" (path-root file))
     (lambda (port)
-      |Define section iterator|
+      @<Define section iterator@>
       (define tokens
         (write-index
           file (call-with-input-file file chezweb-tokenize)))
       (define sections (index-sections file tokens))
-      |Define weave chunk reference encoder|
+      @<Define weave chunk reference encoder@>
       (format port "\\input chezwebmac~n~n")
       (let loop ([tokens tokens])
         (when (pair? tokens)
-          (call-with-values (lambda () |Process a section|)
+          (call-with-values (lambda () @<Process a section@>)
             loop)))
       (format port "\\inx~n\\fin~n\\con~n"))
     'replace))
@@ -1256,8 +1256,8 @@ it. A section may or may not have any code section in it.
 @<Process a section@>=
 (define sectnum (next-section))
 (case (car tokens)
-  [(|@@ |) |Process a normal section|]
-  [(@@*) |Process a starred section|]
+  [(|@@ |) @<Process a normal section@>]
+  [(@@*) @<Process a starred section@>]
   [else
     (if (string? (car tokens))
         (begin (put-string port (car tokens))
@@ -1293,7 +1293,7 @@ after it.
       (error #f "Section contains no body." (list-head tokens 2)))
     maybe))
 (format port "\\M{~a}~a~n" sectnum (texify-section-text body))
-(let ([leftover |Weave optional code chunk|])
+(let ([leftover @<Weave optional code chunk@>])
   (format port "\\fi~n~n")
   leftover)
 
@@ -1304,10 +1304,10 @@ section.
 @c (port tokens sectnum encode)
 @<Process a starred section@>=
 (define-values (depth body)
-  |Scrape depth and body from starred section|)
+  @<Scrape depth and body from starred section@>)
 (format port "\\N{~a}{~a}~a~n"
   depth sectnum (texify-section-text body))
-(let ([leftover |Weave optional code chunk|])
+(let ([leftover @<Weave optional code chunk@>])
   (format port "\\fi~n~n")
   leftover)
 
@@ -1368,12 +1368,12 @@ finally have a case where the captures list is given.
      (error #f "expected control code" (car txttkns))]
     [else
       (case (car txttkns)
-        [(@@p) |Weave program chunk|]
+        [(@@p) @<Weave program chunk@>]
         [(@@<)
          (let ([captures '()] [exports '()])
-           |Weave named chunk|)]
-        [(@@c) |Weave captures and named chunk|]
-        [(@@|(|) |Weave file chunk|]
+           @<Weave named chunk@>)]
+        [(@@c) @<Weave captures and named chunk@>]
+        [(@@|(|) @<Weave file chunk@>]
         [(|@@ | @@*) txttkns]
         [else
           (error #f "unrecognized code" (car txttkns))])]))
@@ -1403,7 +1403,7 @@ what we would do for any named chunk.
     (list-head txttkns (min (length txttkns) 2))))
 (let-values ([(captures exports) (parse-captures-line (cadr txttkns))])
   (let ([txttkns (cddr txttkns)])
-    |Weave named chunk|))
+    @<Weave named chunk@>))
 
 @ When we weave a named chunk, we need to know the captures and
 exports that are mentioned for the current chunk. We don't have to
@@ -1583,7 +1583,7 @@ anything at the \TeX\ level.
     (call-with-output-file ofile
       (lambda (port)
         (let loop ([tokens tokens] [res '()] [sectnum 0])
-          |Dispatch on token type|))
+          @<Dispatch on token type@>))
       'replace)))
 
 @ We have a couple of cases that we can encounter when we deal with a
@@ -1596,13 +1596,13 @@ together.
 @c (tokens index port res sectnum loop)
 @<Dispatch on token type@>=
 (cond
-  [(null? tokens) |Write index to file| (reverse res)]
+  [(null? tokens) @<Write index to file@> (reverse res)]
   [(memq (car tokens) '(@@* |@@ |))
    (loop (cdr tokens) (cons (car tokens) res) (1+ sectnum))]
-  [(memq (car tokens) '(@@^ @@. @@:)) |Handle index token|]
+  [(memq (car tokens) '(@@^ @@. @@:)) @<Handle index token@>]
   [(symbol? (car tokens))
    (loop (cdr tokens) (cons (car tokens) res) sectnum)]
-  [(string? (car tokens)) |Deal with string token|]
+  [(string? (car tokens)) @<Deal with string token@>]
   [else
     (error #f "unrecognized token" (car tokens))])
 
@@ -1617,7 +1617,7 @@ types.
 @c (tokens index loop sectnum res)
 @<Handle index token@>=
 (let ([code (car tokens)])
-  |Verify index syntax|
+  @<Verify index syntax@>
   (hashtable-update! index (strip-whitespace (cadr tokens))
     (lambda (db)
       (let ([res (assq code db)])
@@ -1700,7 +1700,7 @@ expects.
     (cond
       [(null? tokens) (reverse res)]
       [(memq (car tokens) '(@@: @@^ @@.))
-       |Verify index syntax|
+       @<Verify index syntax@>
        (loop (cdddr tokens) res)]
       [(string? (car tokens))
        (if (and (pair? res) (string? (car res)))
@@ -1725,17 +1725,15 @@ where that chunk name is defined, and where the chunk is referenced.
 
 @p
 (define (index-sections file tokens)
-  (call-with-output-file (format "~a.scn" (path-root file))
-    (lambda (port) 
-      (let ([sections (make-hashtable string-hash string=?)])
-        (let loop ([tokens tokens] [sectnum 0])
-          (when (pair? tokens)
-            (case (car tokens)
-              [(|@@ | @@*) (loop (cdr tokens) (1+ sectnum))]
-              [(@@< |@@(|) |Process named chunk|] ;)
-              [else (loop (cdr tokens) sectnum)])))
-        sections))
-    'replace))
+  (let ([sections (make-hashtable string-hash string=?)])
+    (let loop ([tokens tokens] [sectnum 0])
+      (when (pair? tokens)
+        (case (car tokens)
+          [(|@@ | @@*) (loop (cdr tokens) (1+ sectnum))]
+          [(@@< |@@(|) @<Process named chunk@>] ;)
+          [else (loop (cdr tokens) sectnum)])))
+    @<Write sections index@>
+    sections))
 
 @ We have three main pieces of information that we want to keep around
 when dealing with a section, the type of the section, which should be
@@ -1781,6 +1779,13 @@ from, depending on the closing delimiter.
           [(@@>=) (make-section-info type (cons sectnum defs) refs)]
           [else (error #f "this can't happen")])))
     (make-section-info #f '() '())))
+
+@ When we have finally built the entire section index, we will generate
+the file
+
+@c (sections file)
+@<Write sections index@>=
+(void)
 
 @ This section information is especially useful when we want to do the 
 encoding of the chunk references. If we have a chunk reference, we need

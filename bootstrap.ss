@@ -187,7 +187,7 @@
       (error #f "unexpected end of file" tokens))
     (let ([name (list-ref tokens 1)] [closer (list-ref tokens 2)]) 
       (unless (eq? '@>= closer)
-        (error #f "Expected closing @>=" name closer body)) 
+        (error #f "Expected closing @>=" name closer)) 
       (unless (string? name)
         (error #f "Expected name string" name))
       (let-values ([(ntkns body) (slurp-code (list-tail tokens 3) encode)])
@@ -234,7 +234,7 @@
   (error #f "unexpected end of token stream" tokens))
 (unless (string? (cadr tokens))
   (error #f "expected chunk name" (list-head tokens 2)))
-(unless (eq? '@@> (caddr tokens))
+(unless (eq? '@> (caddr tokens))
   (error #f "expected chunk closer" (list-head tokens 3)))
 )
 
@@ -390,7 +390,7 @@
       [(null? tokens) (values '() (verify res))]
       [(string? (car tokens))
        (loop (cdr tokens) (string-append res (car tokens)))]
-      [(eq? '@@< (car tokens))
+      [(eq? '@< (car tokens))
        |Verify chunk reference syntax|
        (loop (cdddr tokens)
          (string-append
