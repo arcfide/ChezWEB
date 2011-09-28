@@ -263,7 +263,7 @@ the indirect exports for the |@@<| macro.
   module-form value-form build-module-form build-value-form)
 )
 
-@* The Runtime Library. For users who wish to use this runtime in
+@* 2 The Runtime Library. For users who wish to use this runtime in
 their own code, we will provide a simple library for them to load the
 runtime code themselves. This will enable them to use the macro as
 their own abstraction and have the chunk like reordering without
@@ -341,18 +341,22 @@ does not intend it.  Extraneous whitespace at the beginning of a file
 can cause problems with things like scripts if the user is using the
 |@@(| control code to generate the script file.
 
+If we do not find the correct character for closing, then we
+will treat it like a normal |@@>| code, which is a code which
+does not strip the rest of the line's contents.
+
 @c (port cur loop tokens c nc)
 @<Parse possible @@>= delimiter@>=
+(define (extend tok ncur)
+  (if (null? cur)
+      (loop (cons tok tokens) ncur)
+      (loop
+        (cons* tok (list->string (reverse cur)) tokens)
+        ncur)))
 (let ([nnc (read-char port)])
   (if (char=? #\= nnc)
-      (begin 
-        (get-line port)
-        (if (null? cur)
-            (loop (cons '@@>= tokens) '())
-            (loop 
-              (cons* '@@>= (list->string (reverse cur)) tokens)
-              '())))
-      (loop tokens (cons* nnc nc c cur))))
+      (begin (get-line port) (extend '@@>= '()))
+      (extend '@@> (list nnc))))
 
 @* Tangling a WEB. Once we have this list of tokens, we can in turn
 write a simple program to tangle the output. Tangling actually
@@ -686,6 +690,7 @@ non-whitespace character occurs in each direction.
 file will have the following layout:
 
 $$\includegraphics[height=1.25in]{chezweb-1.eps}$$
+@^Chunk layout@>
 
 \noindent The above diagram illustrates the relative positions of the 
 three important pieces of a tangled file. In the first piece, we just 
@@ -784,12 +789,19 @@ definable in any order.
   (vector->list (hashtable-keys named-chunks)))
 
 @ Now all of the pieces are in place to write the |tangle-file|
-procedure that we talked about previously.
+procedure that we talked about previously. We want to be
+careful to cleanse the token list before we actually pass it
+to the rest of the code, because the rest of our code assumes
+a certain layout for the token list that may be invalidated
+by additional annotations that we want to ignore, such as index
+forms, or the like.
 
 @p
 (define (tangle-file web-file)
-  (let ([tokens (call-with-input-file web-file chezweb-tokenize)]
-        [default-file (format "~a.ss" (path-root web-file))])
+  (let ([default-file (format "~a.ss" (path-root web-file))]
+        [tokens
+          (cleanse-tokens-for-tangle
+            (call-with-input-file web-file chezweb-tokenize))])
     (let-values ([(top-level-chunks named-chunks captures)
                   (construct-chunk-tables tokens)])
       (for-each
@@ -859,6 +871,16 @@ backspace one notch.
 \noindent
 Each section has the same basic layout, where it will begin with
 either an N or an M macro, and end with {\tt fi}.
+There are three distinct passes over the code that we have when
+weaving a file. The first is the index, which is in charge of
+cleaning up our token list so that we don't have to deal with
+it in the rest of our code, as well as writing out the
+index file with any explicit or implicit index entries that
+may be there. Next, we will actually parse and write out the
+list of sections that we have, to the section list, and finally,
+we will do the weaving of the actual \TeX\ file for the
+final code document. We will deal chiefly with the third pass
+here.
 
 Let's examine the top-level loop that iterates over the tokens.
 
@@ -867,9 +889,11 @@ Let's examine the top-level loop that iterates over the tokens.
   (call-with-output-file (format "~a.tex" (path-root file))
     (lambda (port)
       |Define section iterator|
+      (define tokens
+        (write-index
+          file (call-with-input-file file chezweb-tokenize)))
       (format port "\\input chezwebmac~n~n")
-      (let loop ([tokens (call-with-input-file file
-                           chezweb-tokenize)])
+      (let loop ([tokens tokens])
         (when (pair? tokens)
           (call-with-values (lambda () |Process a section|)
             loop)))
@@ -1193,8 +1217,170 @@ italics and so forth using the double backslash macro.
 (define (texify-filename txt)
   (format "\\\\{~a}" txt))
 
-@* Handling the indexing. 
+@* Handling the indexing. Generating the index is a combined
+matter of explicit and implicit indexing. At the moment, we do
+no implicit indexing, and only explicit indexing is supported.
+There are three explicit index codes:
 
+\medskip{\parindent = 2em
+\item{|@@\^|} Typeset the index in roman type
+\item{|@@.|} Typeset the index in typewriter type
+\item{|@@:|} Typeset the index using the \.{\\9} macro.
+\par}\medskip
+
+\noindent These form the main part of the explicit index. However,
+there is implicit indexing of the chunks. Named chunks are listed
+after the index is complete. Generating the index and the chunk
+names can be done in two distinct passes. Let's deal with explicit
+indexing first.
+
+One major issue with using the tokens and not turning them into an
+abstract syntax tree before we process them is the unstructured nature
+of the text. Text and code elements may be split up by index
+annotations. As such, we want to run the indexer first to eliminate
+these and unify the token list to the format we expect in the
+weaving code. To do this, we will return the new token list with
+all of the explicit elements removed, and all of the string elements
+that were separated by index entries concatenated together.
+
+We will index based on the section number, rather than by page
+number. This makes things easier, since we don't have to handle
+anything at the \TeX\ level. 
+
+@p
+(define (write-index file tokens)
+  (let ([ofile (format "~a.idx" (path-root file))]
+        [index (make-hashtable string-hash string=?)])
+    (call-with-output-file ofile
+      (lambda (port)
+        (let loop ([tokens tokens] [res '()] [sectnum 0])
+          |Dispatch on token type|))
+      'replace)))
+
+@ We have a couple of cases that we can encounter when we deal with a
+token. At the end of the token list we need to print the index
+that we have accumulated. We increment the section number whenever we
+encounter a new code that starts a section (either |@@*| or |@@ |).
+Otherwise, we need to concatenate the texts between control codes
+together.
+
+@c (tokens index port res sectnum loop)
+@<Dispatch on token type@>=
+(cond
+  [(null? tokens) |Write index to file| (reverse res)]
+  [(memq (car tokens) '(@@* |@@ |))
+   (loop (cdr tokens) (cons (car tokens) res) (1+ sectnum))]
+  [(memq (car tokens) '(@@^ @@. @@:)) |Handle index token|]
+  [(symbol? (car tokens))
+   (loop (cdr tokens) (cons (car tokens) res) sectnum)]
+  [(string? (car tokens)) |Deal with string token|]
+  [else
+    (error #f "unrecognized token" (car tokens))])
+
+@ For every index entry that we encounter, we need to update the
+index table with the new section and remove the index entry from
+the token list. We also want to verify that we have a valid
+form of index entry. There are three different ways to enter
+something into the index. We need to sort them all the same,
+irrespective of the type, but we want to record the different
+types. 
+
+@c (tokens index loop sectnum res)
+@<Handle index token@>=
+(let ([code (car tokens)])
+  |Verify index syntax|
+  (hashtable-update! index (strip-whitespace (cadr tokens))
+    (lambda (db)
+      (let ([res (assq code db)])
+        (set-cdr! res (cons sectnum (cdr res)))
+        db))
+    (list (cons '@@^ '()) (cons '@@. '()) (cons '@@: '())))
+  (loop (cdddr tokens) res sectnum))
+
+@ Our index syntax is easy to verify. It should have the beginning
+control code, followed by a string which is the index entry, and
+the closing |@@>| tag.
+
+@c (tokens)
+@<Verify index syntax@>=
+(unless (<= 3 (length tokens))
+  (error #f "invalid index entry" tokens))
+(unless (string? (cadr tokens))
+  (error #f "expected index entry text" (list-head tokens 3)))
+(unless (eq? '@@> (caddr tokens))
+  (error #f "expected index entry closer" (list-head tokens 3)))
+
+
+@ When we encounter a string in the token list, we need to make sure
+that we concatenate it in the right order if the string at the head of
+the |res| list is a string. This case will arise whenever we cut out
+the index tokens in between the two strings. Otherwise, we can just
+leave it and add it to the result list as normal.
+
+@c (loop tokens res sectnum)
+@<Deal with string token@>=
+(loop (cdr tokens)
+  (if (and (pair? res) (string? (car res)))
+      (cons
+        (string-append (car res) (car tokens))
+        (cdr res))
+      (cons (car tokens) res))
+  sectnum)
+
+@ Once we have the entire index in the form of a hashtable, we want
+to sort them in the appropriate order and print each one. We will
+print the |@@:| codes first, followed by |@@^| and |@@.|. Each
+code will be associated with a number of sections, and we will
+print the section in ascending order. A single index entry looks
+like:
+
+\medskip\verbatim
+\I<entry>, <sections>.
+!endverbatim \medskip
+
+\noindent In this example, the entry is formatted according to
+the code and the sections are comma separated.
+
+@c (port index)
+@<Write index to file@>=
+(define (print name macro sects)
+  (format port "\\I~a{~a}, ~{~a~^, ~}.~n" macro name sects))
+(for-each
+  (lambda (entry)
+    (let ([name (car entry)]
+          [roman (cdr (assq '@@^ (cdr entry)))]
+          [typew (cdr (assq '@@. (cdr entry)))]
+          [nine (cdr (assq '@@: (cdr entry)))])
+      (when (pair? nine) (print name "\\9" nine))
+      (when (pair? roman) (print name " " roman))
+      (when (pair? typew) (print name "\\." typew))))
+  (list-sort (lambda (a b) (string<=? (car a) (car b)))
+    (let-values ([(key val) (hashtable-entries index)])
+      (map cons (vector->list key) (vector->list val)))))
+
+@* 2 Stripping the indexes for tangling. When we are tangling a file
+we don't care a hoot about the indexes. Thus, we should have a
+simplified function that just gets rid of the
+index elements entirely and gives us a
+clean token list that conforms to what our tangling algorithm
+expects.
+
+@p
+(define (cleanse-tokens-for-tangle tokens)
+  (let loop ([tokens tokens] [res '()])
+    (cond
+      [(null? tokens) (reverse res)]
+      [(memq (car tokens) '(@@: @@^ @@.))
+       |Verify index syntax|
+       (loop (cdddr tokens) res)]
+      [(string? (car tokens))
+       (if (and (pair? res) (string? (car res)))
+           (loop (cdr tokens)
+             (cons (string-append (car res) (car tokens)) (cdr res)))
+           (loop (cdr tokens) (cons (car tokens) res)))]
+      [else
+        (loop (cdr tokens) (cons (car tokens) res))])))
+      
 @* TeX Macros.
 
 @* Index.

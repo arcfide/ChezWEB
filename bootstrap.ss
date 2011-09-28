@@ -102,16 +102,16 @@
 )
 
 (@< (|Parse possible @>= delimiter| port cur loop tokens c nc)
+(define (extend tok ncur)
+  (if (null? cur)
+      (loop (cons tok tokens) ncur)
+      (loop
+        (cons* tok (list->string (reverse cur)) tokens)
+        ncur)))
 (let ([nnc (read-char port)])
-  (if  (char=? #\= nnc)
-    (begin 
-      (get-line port)
-      (if  (null? cur)
-        (loop (cons '@>= tokens) '())
-        (loop 
-          (cons* '@>= (list->string (reverse cur)) tokens)
-          '())))
-    (loop tokens (cons* nnc nc c cur))))
+  (if (char=? #\= nnc)
+      (begin (get-line port) (extend '@>= '()))
+      (extend '@> (list nnc))))
 )
 
 (@< (|Extend default top-level| loop tokens top-level)
@@ -207,6 +207,15 @@
         (if (eq? file '*default*) '*default* output-file) 
         "")))
   'replace)
+)
+
+(@< (|Verify index syntax| tokens)
+(unless (<= 3 (length tokens))
+  (error #f "invalid index entry" tokens))
+(unless (string? (cadr tokens))
+  (error #f "expected index entry text" (list-head tokens 3)))
+(unless (eq? '@> (caddr tokens))
+  (error #f "expected index entry closer" (list-head tokens 3)))
 )
 
 (@< (|Write named chunks to file| captures named-chunks output-port)
@@ -332,18 +341,33 @@
         (substring str s (1+ e)))))
 
 (define (tangle-file web-file)
-  (let 
-      ([tokens (call-with-input-file web-file chezweb-tokenize)]
-       [default-file (format "~a.ss" (path-root web-file))])
-    (let-values 
-        ([(top-level-chunks named-chunks captures)
-          (construct-chunk-tables tokens)])
+  (let ([default-file (format "~a.ss" (path-root web-file))]
+        [tokens
+          (cleanse-tokens-for-tangle
+            (call-with-input-file web-file chezweb-tokenize))])
+    (let-values ([(top-level-chunks named-chunks captures)
+                  (construct-chunk-tables tokens)])
       (for-each
         (lambda (file)
-          (let ([output-file
-                  (if (eq? '*default* file) default-file file)])
+          (let ([output-file (if (eq? '*default* file)
+                                 default-file file)])
             |Write tangled file contents|))
         (vector->list (hashtable-keys top-level-chunks))))))
+
+(define (cleanse-tokens-for-tangle tokens)
+  (let loop ([tokens tokens] [res '()])
+    (cond
+      [(null? tokens) (reverse res)]
+      [(memq (car tokens) '(@: @^ @.))
+       |Verify index syntax|
+       (loop (cdddr tokens) res)]
+      [(string? (car tokens))
+       (if (and (pair? res) (string? (car res)))
+           (loop (cdr tokens)
+             (cons (string-append (car res) (car tokens)) (cdr res)))
+           (loop (cdr tokens) (cons (car tokens) res)))]
+      [else
+        (loop (cdr tokens) (cons (car tokens) res))])))
 
 (tangle-file "chezweb.w")
 (exit 0)
