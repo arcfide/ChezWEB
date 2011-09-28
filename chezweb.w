@@ -645,33 +645,49 @@ for both tangling and weaving. As such, we'll document the basic
 logic here, and you can read about the special representations
 in the appropriate section below.
 
-The |slurp-code| procedure takes two arguments, a list of
-tokens whose head should be the start of a code body, and a
+The |slurp-code| procedure takes three arguments, a list of
+tokens whose head should be the start of a code body, a
 procedure |encode| that, when given a string representing a
 chunk name, will encode that string into another string, suitable
-for use as part of the code body of either tangled or woven code.
+for use as part of the code body of either tangled or woven code,
+and finally, a cleaner for any string content that is encountered.
+The use of a cleaner allows the slurper to be used for both tangling 
+and weaving. Specifically, if we tangle code, we don't want to 
+prepare it for \TeX{}ing. On the other hand, if we are weaving the 
+code, we need to remember to do things to it to make it nicer for the 
+\TeX environments. 
 The |slurp-code| procedure will return two values, one being the
 pointer to the rest of the tokens after the body has been processed,
 and the other, the code body itself as a single string.
 
 @p
-(define (slurp-code tokens encode)
-  (define (verify x)
-    (when (zero? (string-length x))
-      (error #f "expected code body" 
-        (list-head tokens (min (length tokens) 3))))
-    x)
+(define (slurp-code tokens encode clean)
+  @<Define slurp verifier@>
   (let loop ([tokens tokens] [res ""])
     (cond
       [(null? tokens) (values '() (verify res))]
       [(string? (car tokens))
-       (loop (cdr tokens) (string-append res (car tokens)))]
+       (loop (cdr tokens) 
+             (string-append res (clean (car tokens))))]
       [(eq? '@@< (car tokens))
        @<Verify chunk reference syntax@>
        (loop (cdddr tokens)
          (string-append
            res (encode (strip-whitespace (cadr tokens)))))]
       [else (values tokens (verify res))])))
+
+@ We will verify the return result to make sure that we don't have a 
+case that we don't want, such as when there is an empty program body.
+
+@c (tokens) => (verify)
+@<Define slurp verifier@>=
+(define (verify x)
+  (when (zero? (string-length x))
+    (error #f "expected code body" 
+      (list-head tokens (min (length tokens) 3))))
+  (when (for-all char-whitespace? (string->list x))
+    (error #f "empty chunk body" x))
+  x)
 
 @ The syntax for a chunk reference is an open and closer delimiting a
 chunk name string:
@@ -835,7 +851,8 @@ string that we find to the |*default*| key in the |top-level| table.
 @c (loop tokens top-level)
 @<Extend default top-level@>=
 (define (encode x) (format "|~a|" x))
-(define-values (ntkns body) (slurp-code (cdr tokens) encode))
+(define-values (ntkns body) 
+  (slurp-code (cdr tokens) encode (lambda (x) x)))
 (hashtable-update! top-level '*default*
   (lambda (cur) (string-append cur body))
   "")
@@ -997,7 +1014,8 @@ later referred to as |name| and |body| rather than as |car|s and
         (error #f "Expected closing @@>=" name closer)) 
       (unless (string? name)
         (error #f "Expected name string" name))
-      (let-values ([(ntkns body) (slurp-code (list-tail tokens 3) encode)])
+      (let-values ([(ntkns body) 
+                    (slurp-code (list-tail tokens 3) encode (lambda (x) x))])
         (values name body ntkns)))))
 
 @ We also want to define out own procedure to strip the whitespace
@@ -1386,7 +1404,7 @@ complete the section.
 
 @c (port txttkns sectnum encode)
 @<Weave program chunk@>=
-(let-values ([(rest body) (slurp-code (cdr txttkns) encode)])
+(let-values ([(rest body) (slurp-code (cdr txttkns) encode double-bangs)])
   (format port "\\Y\\B ~a \\par~n" (chezweb-pretty-print body))
   rest)
 
@@ -1444,7 +1462,8 @@ manages the printing for both.
     (error #f "expected name for chunk" name))
   (unless (eq? '@@>= delim)
     (error #f "expected delimiter @@>=" delim))
-  (let-values ([(rest body) (slurp-code (list-tail txttkns 3) encode)])
+  (let-values ([(rest body) 
+                (slurp-code (list-tail txttkns 3) encode double-bangs)])
     (print-named-chunk
       port (texify-section-text name) body sectnum captures exports)
     rest))
@@ -1463,7 +1482,8 @@ for. Namely, a file chunk does not have any captures or exports.
     (error #f "expected filename for chunk" name))
   (unless (eq? '@@>= delim)
     (error #f "expected delimiter @@>=" delim))
-  (let-values ([(rest body) (slurp-code (list-tail txttkns 3) encode)])
+  (let-values ([(rest body) 
+                (slurp-code (list-tail txttkns 3) encode double-bangs)])
     (print-named-chunk
       port (texify-filename name) body sectnum '() #f)
     rest))
@@ -1495,26 +1515,27 @@ it uses |weave-file| instead of |tangle-file|.
 @* Pretty Printing. We want to implement some sort of pretty printing,
 but at the moment, that is still pretty difficult. Instead, we'll just
 insert everything verbatim and avoid the entire question.
-Using the verbatim package also helps. In the version of verbatim
-that we are using,
-you have to be careful to make sure that the exclamation marks
-are doubled in case you end up with something that reads like
-{\tt !endverbatim} which will stop the environment. Funnily enough,
-this very example is a case where you need the doubling.
+Using the verbatim package also helps. 
+We are assuming here that our code has been safely processed through 
+something that properly escapes any of the special verbatim codes when 
+it needs to. That is, we want the code to be preprocessed for the
+verbatim environment. To help any programs that want to handle that, we
+define the |double-bangs| procedure here that cleans up the code for the
+verbatim environment by escaping out the exclamation marks in the text.
 
 @p
+(define (double-bangs code)
+  (let loop ([code (string->list code)] [res '()])
+    (cond
+      [(null? code) (list->string (reverse res))]
+      [(char=? #\! (car code))
+       (loop (cdr code) (cons* #\! #\! res))]
+      [else (loop (cdr code) (cons (car code) res))])))
 (define (chezweb-pretty-print code)
-  (define (double code)
-    (let loop ([code (string->list code)] [res '()])
-      (cond
-        [(null? code) (list->string (reverse res))]
-        [(char=? #\! (car code))
-         (loop (cdr code) (cons* #\! #\! res))]
-        [else (loop (cdr code) (cons (car code) res))])))
   (with-output-to-string
     (lambda ()
       (printf "\\verbatim~n")
-      (printf "~a" (double code))
+      (printf "~a" code)
       (printf "!endverbatim "))))
 
 @ We also want to handle the printing of some of the section text. In
