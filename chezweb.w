@@ -656,9 +656,14 @@ and the other, the code body itself as a single string.
 
 @p
 (define (slurp-code tokens encode)
+  (define (verify x)
+    (when (zero? (string-length x))
+      (error #f "expected code body" 
+        (list-head tokens (min (length tokens) 3))))
+    x)
   (let loop ([tokens tokens] [res ""])
     (cond
-      [(null? tokens) (values '() res)]
+      [(null? tokens) (values '() (verify res))]
       [(string? (car tokens))
        (loop (cdr tokens) (string-append res (car tokens)))]
       [(eq? '@@< (car tokens))
@@ -666,7 +671,7 @@ and the other, the code body itself as a single string.
        (loop (cdddr tokens)
          (string-append
            res (encode (strip-whitespace (cadr tokens)))))]
-      [else (values tokens res)])))
+      [else (values tokens (verify res))])))
 
 @ The syntax for a chunk reference is an open and closer delimiting a
 chunk name string:
@@ -829,13 +834,12 @@ string that we find to the |*default*| key in the |top-level| table.
 
 @c (loop tokens top-level)
 @<Extend default top-level@>=
-(define body (cadr tokens))
-(unless (string? body)
-  (error #f "Expected a string body" body))
+(define (encode x) (format "|~a|" x))
+(define-values (ntkns body) (slurp-code (cdr tokens) encode))
 (hashtable-update! top-level '*default*
   (lambda (cur) (string-append cur body))
   "")
-(loop (cddr tokens) '() #f)
+(loop ntkns '() #f)
 
 @ Handling file name top-level updates works much like a named chunk,
 except that we do not have to deal with the issues of capture
@@ -851,7 +855,7 @@ the name in question.
   (hashtable-update! top-level name
     (lambda (cur) (string-append cur body))
     ""))
-(loop (cddddr tokens) '() #f)
+(loop tknsrest '() #f)
 
 @ Named chunk updates are complicated by the need to track
 captures. In the \WEB\ syntax, if you have a capture that you want to
@@ -937,7 +941,7 @@ captures list of |a b t| and the exports list to be |x y z u v|.
   (hashtable-update! captures name
     (lambda (cur) |Extend captures and exports|)
     #f))
-(loop (cddddr tokens) '() #f)
+(loop tknsrest '() #f)
 
 @ We have to be careful about how we deal with the exports list.
 Suppose that the user first defines a captures line without the
@@ -981,19 +985,20 @@ work of extracting out the name and body strings so that they can be
 later referred to as |name| and |body| rather than as |car|s and
 |cdr|s into a tokens list, since that nesting gets a bit deep.
 
-@c (tokens) => (name body)
+@c (tokens) => (name body tknsrest)
 @<Verify and extract delimited chunk@>=
-(define-values (name closer body)
+(define (encode x) (format "|~a|" x))
+(define-values (name body tknsrest)
   (let ()
     (unless (<= 4 (length tokens))
-      (error #f "Unexpected end of file" tokens))
-    (apply values (cdr (list-head tokens 4)))))
-(unless (eq? '@@>= closer)
-  (error #f "Expected closing @@>=" name closer body))
-(unless (string? name)
-  (error #f "Expected name string" name))
-(unless (string? body)
-  (error #f "Expected string body" body))
+      (error #f "unexpected end of file" tokens))
+    (let ([name (list-ref tokens 1)] [closer (list-ref tokens 2)]) 
+      (unless (eq? '@@>= closer)
+        (error #f "Expected closing @@>=" name closer body)) 
+      (unless (string? name)
+        (error #f "Expected name string" name))
+      (let-values ([(ntkns body) (slurp-code (list-tail tokens 3) encode)])
+        (values name body ntkns)))))
 
 @ We also want to define out own procedure to strip the whitespace
 from our strings. We could have used something from the SRFIs, such as
@@ -1223,6 +1228,8 @@ Let's examine the top-level loop that iterates over the tokens.
       (define tokens
         (write-index
           file (call-with-input-file file chezweb-tokenize)))
+      (define sections (index-sections file tokens))
+      |Define weave chunk reference encoder|
       (format port "\\input chezwebmac~n~n")
       (let loop ([tokens tokens])
         (when (pair? tokens)
@@ -1245,7 +1252,7 @@ follow another code section. Every section must start with a text
 section, though that text section may have nothing but whitespace in
 it. A section may or may not have any code section in it.
 
-@c (port tokens next-section)
+@c (port tokens next-section encode)
 @<Process a section@>=
 (define sectnum (next-section))
 (case (car tokens)
@@ -1278,7 +1285,7 @@ want to print using the {\tt M} macro. In this and in starred
 sections, we want to typeset the code section if we have one right
 after it. 
 
-@c (port tokens sectnum)
+@c (port tokens sectnum encode)
 @<Process a normal section@>=
 (define body
   (let ([maybe (cadr tokens)])
@@ -1294,8 +1301,7 @@ after it.
 section, except that we need to extract the depth from the starred
 section.
 
-@c (port tokens sectnum)
-
+@c (port tokens sectnum encode)
 @<Process a starred section@>=
 (define-values (depth body)
   |Scrape depth and body from starred section|)
@@ -1353,7 +1359,7 @@ We may at first discover a program chunk for the top-level. We may
 have a named chunk without a captures and exports list, and we may
 finally have a case where the captures list is given. 
 
-@c (tokens port sectnum)
+@c (tokens port sectnum encode)
 @<Weave optional code chunk@>=
 (let ([txttkns (cddr tokens)])
   (cond
@@ -1378,14 +1384,11 @@ print the space and then move directly into code mode before printing
 the code in a pretty format. We then want to end the paragraph and
 complete the section.
 
-@c (port txttkns sectnum)
+@c (port txttkns sectnum encode)
 @<Weave program chunk@>=
-(unless (and (pair? (cdr txttkns)) (string? (cadr txttkns)))
-  (error #f "expected program body"
-    (list-head txttkns (min (length txttkns) 2))))
-(format port "\\Y\\B ~a \\par~n"
-  (chezweb-pretty-print (cadr txttkns)))
-(cddr txttkns)
+(let-values ([(rest body) (slurp-code (cdr txttkns) encode)])
+  (format port "\\Y\\B ~a \\par~n" (chezweb-pretty-print body))
+  rest)
 
 @ If we encounter a captures code, this means that we should expect
 a captures line followed by a named chunk element. We can read
@@ -1393,13 +1396,12 @@ the captures and exports from the captures line using
 the previously defined |parse-captures-line|. Then we can do
 what we would do for any named chunk.
 
-@c (port sectnum txttkns)
+@c (port sectnum txttkns encode)
 @<Weave captures and named chunk@>=
 (unless (and (pair? (cdr txttkns)) (string? (cadr txttkns)))
   (error #f "expected captures line"
     (list-head txttkns (min (length txttkns) 2))))
-(let-values ([(captures exports)
-              (parse-captures-line (cadr txttkns))])
+(let-values ([(captures exports) (parse-captures-line (cadr txttkns))])
   (let ([txttkns (cddr txttkns)])
     |Weave named chunk|))
 
@@ -1432,43 +1434,39 @@ manages the printing for both.
 
 @ Now we can easily handle the named chunk.
 
-@c (txttkns port sectnum captures exports)
+@c (txttkns port sectnum captures exports encode)
 @<Weave named chunk@>=
 (unless (<= 4 (length txttkns))
   (error #f "Missing pieces of a named chunk" txttkns))
 (let ([name (list-ref txttkns 1)]
-      [delim (list-ref txttkns 2)]
-      [body (list-ref txttkns 3)])
+      [delim (list-ref txttkns 2)])
   (unless (string? name)
     (error #f "expected name for chunk" name))
   (unless (eq? '@@>= delim)
     (error #f "expected delimiter @@>=" delim))
-  (unless (string? body)
-    (error #f "expected code body" body))
-  (print-named-chunk
-    port (texify-section-text name) body sectnum captures exports)
-  (list-tail txttkns 4))
+  (let-values ([(rest body) (slurp-code (list-tail txttkns 3) encode)])
+    (print-named-chunk
+      port (texify-section-text name) body sectnum captures exports)
+    rest))
 
 @ And we can use the same basic techniques to handle the file
 chunk, with some slight variations on the codes that we're looking
 for. Namely, a file chunk does not have any captures or exports.
 
-@c (txttkns port sectnum)
+@c (txttkns port sectnum encode)
 @<Weave file chunk@>=
 (unless (<= 4 (length txttkns))
   (error #f "Missing pieces of a named chunk" txttkns))
 (let ([name (list-ref txttkns 1)]
-      [delim (list-ref txttkns 2)]
-      [body (list-ref txttkns 3)])
+      [delim (list-ref txttkns 2)])
   (unless (string? name)
     (error #f "expected filename for chunk" name))
   (unless (eq? '@@>= delim)
     (error #f "expected delimiter @@>=" delim))
-  (unless (string? body)
-    (error #f "expected code body" body))
-  (print-named-chunk
-    port (texify-filename name) body sectnum '() #f)
-  (list-tail txttkns 4))
+  (let-values ([(rest body) (slurp-code (list-tail txttkns 3) encode)])
+    (print-named-chunk
+      port (texify-filename name) body sectnum '() #f)
+    rest))
 
 @ We have now completely defined the |weave-file| procedure, which we
 will use in the {\tt chezweave} program. This program has the exact
@@ -1711,6 +1709,108 @@ expects.
            (loop (cdr tokens) (cons (car tokens) res)))]
       [else
         (loop (cdr tokens) (cons (car tokens) res))])))
+
+@* 2 Indexing the section names. We want to generate an index for the
+names of all the named sections or files that have been created. This is
+done by having a separate pass |index-sections| that parses the tokens,
+writes the results out to a section name index file, and returns a
+hashtable with all of the section information in it. We use this section
+information whenever we want to write the section cross references or
+when we want to know what section number to use when rendering a section
+reference inside of a code body. The table is keyed on section names,
+which are strings with the whitespace stripped from them. 
+The value field is a |section-info| type that is described further down,
+it gives information as to the type of the section, the list of sections
+where that chunk name is defined, and where the chunk is referenced. 
+
+@p
+(define (index-sections file tokens)
+  (call-with-output-file (format "~a.scn" (path-root file))
+    (lambda (port) 
+      (let ([sections (make-hashtable string-hash string=?)])
+        (let loop ([tokens tokens] [sectnum 0])
+          (when (pair? tokens)
+            (case (car tokens)
+              [(|@@ | @@*) (loop (cdr tokens) (1+ sectnum))]
+              [(@@< |@@(|) |Process named chunk|] ;)
+              [else (loop (cdr tokens) sectnum)])))
+        sections))
+    'replace))
+
+@ We have three main pieces of information that we want to keep around
+when dealing with a section, the type of the section, which should be
+either a file or a name chunk, and then the section numbers where the
+chunk is defined, and the section numbers where the chunk is
+referenced. We encapsulate this information inside of a record for
+easier use.
+
+@p
+(define-record-type section-info 
+  (fields type defs refs)
+  (protocol
+    (lambda (n)
+      (lambda (type defs refs)
+        (unless (or (not type) (memq type '(@@< @@|(|))) ; )
+          (error #f "invalid type" type))
+        (unless (and (list? defs) (for-all integer? defs))
+          (error #f "invalid defs list" defs))
+        (unless (and (list? refs) (for-all integer? refs))
+          (error #f "invalid refs list" refs))
+        (n type defs refs)))))
+
+@ When we encounter a named chunk either in file or regular form, we
+want to add either a new section to the list, or we want to extend the 
+existing form. Either we have a definition form, or we have a reference
+from, depending on the closing delimiter.
+
+@c (sections loop tokens sectnum)
+@<Process named chunk@>=
+(unless (<= 3 (length tokens)) (error #f "unexpected end of file" tokens))
+(let ([type (car tokens)] [name (cadr tokens)] [delim (caddr tokens)])
+  (unless (string? name) (error #f "expected chunk name" name))
+  (unless (memq delim '(@@> @@>=)) (error #f "invalid delimiter" delim))
+  (hashtable-update! sections (strip-whitespace name)
+    (lambda (cur) 
+      (let ([defs (section-info-defs cur)]
+            [refs (section-info-refs cur)])
+        (when (and (section-info-type cur) 
+                   (not (eq? type (section-info-type cur))))
+          (error #f "section type mismatch" name))
+        (case delim 
+          [(@@>) (make-section-info type defs (cons sectnum refs))]
+          [(@@>=) (make-section-info type (cons sectnum defs) refs)]
+          [else (error #f "this can't happen")])))
+    (make-section-info #f '() '())))
+
+@ This section information is especially useful when we want to do the 
+encoding of the chunk references. If we have a chunk reference, we need
+to typeset it specially inside of the verbatim environment to make sure
+that it looks right. We do this by defining an encoder that takes a 
+single name string, stripped of its whitespace, and returns another
+string that is suitable for entering it into the verbatim environment.
+This is done for weaving by using the |!| sign to allow for macro
+expansion, which will allow us to typeset a chunk in a non-verbatim
+mode. For example, if our chunk name is |blah| and it appears in section
+number 5, then we should be able to typeset it using the following
+output.
+
+\medskip\verbatim
+!!X5:blah!!X
+!endverbatim \medskip
+
+\noindent Our encoder will close over a given, specific sections
+database.
+
+@c (sections) => (encode)
+@<Define weave chunk reference encoder@>=
+(define (encode x)
+  (let ([res (hashtable-ref sections x (make-section-info '@@< '() '()))])
+    (format "!!X~a:~?!!X"
+      (let ([defs (section-info-defs res)])
+        (if (null? defs) "" (car defs)))
+      (let ([type (section-info-type res)])
+        (case type [(@@<) "~a"] [(@@|(|) "\\\\{~a}"])) ; )
+      (list x))))
 
 @* TeX Macros.
 
