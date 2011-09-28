@@ -1673,7 +1673,7 @@ the code and the sections are comma separated.
 @c (port index)
 @<Write index to file@>=
 (define (print name macro sects)
-  (format port "\\I~a{~a}, ~{~a~^, ~}.~n" macro name sects))
+  (format port "\\I~a{~a}, ~{~a~^, ~}.~n" macro name (list-sort < sects)))
 (for-each
   (lambda (entry)
     (let ([name (car entry)]
