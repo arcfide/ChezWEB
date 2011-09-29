@@ -298,7 +298,32 @@ human-readable format.
 
 @* Using ChezWEB.
 
-@* Control Codes Cheat Sheet.
+@* Control Codes Cheat Sheet. This section describes in brief the
+function and syntax of every control code. It does not go into detail,
+but it is meant to be used as a general reference point for users who
+are familiar with the overall system, and want an at-a-glance picture of
+the \ChezWEB\ language. 
+
+$$\includegraphics[width=6in]{chezweb-3.eps}$$
+
+{\parindent = 0.5in
+\item{\.{@@\ }} Start a new normal section.
+\item{\.{@@*}} New starred section, listed in table of contents.
+\item{\.{@@p}} Begin top-level program code.
+\item{\.{@@(}} Output code to a separate file.
+\item{\.{@@<}} Define a named section code chunk.
+\item{\.{@@>}} Delimit/end index codes or a section reference inside of a
+code body.
+\item{\.{@@>=}} Delimit the name of a section you are defining.
+\item{\.{@@c}} Before a named section, list the captures and exports of
+that section.
+\item{\.{@@q}} A comment, only shows in source.
+\item{\.{@@i}} Include the contents of another file.
+\item{\.{@@\^}} Index an entry in roman type.
+\item{\.{@@:}} Index an entry using \.{\9}, default is |@:blah}{code@>|
+which typesets |blah| as |code| in the index.
+\item{\.{@@.}} Index an entry in typewriter type.
+\par}
 
 @* The ChezWEB Runtime. Normal \CWEB\ programs do not have any
 runtime, and they operate completely at the equivalent of a macro
@@ -710,7 +735,14 @@ test but it should do the job.
 (unless (eq? '@@> (caddr tokens))
   (error #f "expected chunk closer" (list-head tokens 3)))
        
-@* Tangling a WEB. Once we have this list of tokens, we can in turn
+@* Tangling a WEB. Tangling is the process of taking a \WEB\ and
+converting it to a Scheme file. In the current implementation, this code
+should run self contained on its own, without the need of any other
+files.
+
+$$\includegraphics[width=3in]{chezweb-4.eps}$$
+
+Once we have this list of tokens, we can in turn
 write a simple program to tangle the output. Tangling actually
 consists of several steps.
 
@@ -1184,7 +1216,6 @@ forms, or the like.
 program like Xe\TeX\ can be used on the resulting \TeX\ file that
 {\tt chezweave} outputs to make the PDF.
 
-% $$\\{Missing figure here.}$$
 $$\includegraphics[width=4in]{chezweb-2.eps}$$
 
 \noindent There are three distinct elements that make up
@@ -1276,8 +1307,7 @@ limbo, where there is no initial code prefixing its content. For limbo
 we insert the code block literally into the output. We can divide our
 sections and chunks into the following taxonomy:
 
-$$\\{Missing figure here.}$$
-%$$\includegraphics[width=???]{chezweb-3.eps}$$
+$$\includegraphics[width=6in]{chezweb-3.eps}$$
 
 \noindent Note that we do not allow a code section to immediately
 follow another code section. Every section must start with a text

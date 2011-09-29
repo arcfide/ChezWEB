@@ -13,10 +13,11 @@ NEW OPERATORS FOR VERSION 2
 
 	@*	Title section
 	@	Untitled section
-	@<	Define Chunk	(Runtime)
-	@>=	Delimit chunk
 	@p	Top level program
 	@(	Write to file
+	@<	Define Chunk			(Runtime)
+	@>=	Delimit chunk
+	@>	Delimit code text
 	@c	Captures and Exports
 	@f	Format 
 	@r	REPL Interaction
@@ -26,4 +27,3 @@ NEW OPERATORS FOR VERSION 2
 	@:	Index defined by \9
 	@q	Comment
 	@i	Include
-	@>	Delimit code text
