@@ -1802,12 +1802,47 @@ from, depending on the closing delimiter.
     (make-section-info #f '() '()))
   (loop (list-tail tokens 3) sectnum))
 
-@ When we have finally built the entire section index, we will generate
-the file
+@ When we have finally built the entire section index, we generate
+the file \.{name.scn} that contains a set of the entries where each
+entry has the following form:
 
-@c (sections file)
+\medskip\verbatim
+\I\X<setcnums>:<sectname>\X
+<Uses>
+!endverbatim \medskip
+
+\noindent The section numbers are comma separated sets of decimal
+numbers, and the section name includes the wrapping for the different
+type of section. The usage string is a normal usage string as generated
+by |weave-sec-refs|.
+
+@c (sections)
 @<Write sections index@>=
-(void)
+(define (print-index port nums name type)
+  (format port "\\I\\X~{~a~^, ~}:~?\\X~n~@[~a~n~]"
+    (list-sort < nums)
+    (case type [(@@|(|) "\\\\{~a}"] [(@@<) "~a"]) ;)
+    (list name)
+    (weave-sec-refs sections name)))
+
+@ We want to use |print-index| on each section that we receive in the 
+|sections| hashtable. All of the entries are sort alphabetically 
+in ascending order. 
+
+@c (file sections)
+@<Write sections index@>=
+(call-with-output-file (format "~a.scn" (path-root file))
+  (lambda (port)
+    (for-each 
+      (lambda (e)
+        (let ([name (car e)]
+              [nums (section-info-defs (cdr e))]
+              [type (section-info-type (cdr e))])
+          (print-index port nums name type)))
+      (let-values ([(keys vals) (hashtable-entries sections)])
+        (list-sort (lambda (a b) (string<? (car a) (car b)))
+          (map cons (vector->list keys) (vector->list vals))))))
+  'replace)
 
 @ This section information is especially useful when we want to do the 
 encoding of the chunk references. If we have a chunk reference, we need
@@ -1838,6 +1873,82 @@ database.
       (let ([type (section-info-type res)])
         (case type [(@@<) "!rm ~a!tt"] [(@@|(|) "\\\\{~a}"])) ; )
       (list x))))
+
+@ When we are weaving, and in the index, we have a concept of section
+cross references. This tells you a few things. Firstly, it tells you
+where your sections are defined, especially if they are defined in
+multiple places, or concatenated together, and it tells you where your
+sections are used or referenced. We use these references in a few
+places. All of the data is encapsulated in the sections hashtable
+@^Sections Hashtable@> discussed above. Whenever you define a chunk, the
+woven output will tell you whether that chunk is extended somewhere
+else and who else uses it. When you are concatenating or extending a 
+chunk, we do not print this information. 
+
+In the sections index, we need to print the section numbers where the
+chunk is defined, and also where it is used. Since there are many places
+where we want to use this functionality, we define the following
+procedures to help with the task. Firstly, two procedures
+|weave-sec-defs| and |weave-sec-refs| give back a format string or
+false, suitable for putting at the bottom of woven code chunks. These
+use the |A| and |U| macros, respectively. We also provide a function
+|weave-sec-def?| which tells you whether or not a given section name 
+has its first definition at the given section number. 
+
+Let's begin with the |weave-sec-defs| procedure. It has the following
+signature:
+
+$$\.{weave-sec-defs} : \\{sections}\ \\{name} \to \\{defs-fmt}$$
+
+\noindent The |sections| argument is a sections hashtable, and the 
+|name| argument should be a section name. We 
+return the format string of section numbers 
+where part of the code for that chunk
+is defined. We return false if we cannot find the definitions in the 
+sections table. 
+
+The format string itself should be the |A| macro followed by 
+an |s| if there is more than one extra section definition site, and then
+the list of comma separated section number or numbers.
+
+@p
+(define (weave-sec-defs sections name)
+  (let ([res (hashtable-ref sections (strip-whitespace name) #f)])
+    (and res 
+         (let ([defs (section-info-defs res)])
+           (and (pair? defs)
+                (format "\\A~[~;~{~s~}~;s~{~s and ~s~}~
+                         ~:;s~{~#[~; and ~] ~s~^,~}~]."
+                        (length defs) defs))))))
+
+@ The |weave-sec-refs| procedure is the same, except that it uses the 
+|U| macro and it uses section references instead of definitions.
+
+@p
+(define (weave-sec-refs sections name)
+  (let ([res (hashtable-ref sections (strip-whitespace name) #f)])
+    (and res 
+         (let ([refs (section-info-refs res)])
+           (and (pair? refs)
+                (format "\\U~[~;~{~s~}~;s~{~s and ~s~}~
+                         ~:;s~{~#[~; and ~] ~s~^,~}~]."
+                        (length refs) refs))))))
+
+@ The |weave-sec-def?| procedure has the following signature:
+
+$$\.{weave-sec-def?} : \\{sections}\ \\{name}\ \\{secnum} \to \&{boolean}$$
+
+\noindent It will return true if the section number provided is the
+lowest number of the definition sections for that given section name. In
+otherwords, it will return true if the section number is the first time
+that the given section |name| is defined.
+
+@p
+(define (weave-sec-def? sections name num)
+  (let ([res (hashtable-ref sections (strip-whitespace name) #f)])
+    (and res 
+         (let ([defs (section-info-defs res)])
+           (and (pair? defs) (= num (car (list-sort < defs))))))))
 
 @* TeX Macros.
 
