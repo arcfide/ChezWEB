@@ -1270,7 +1270,7 @@ follow another code section. Every section must start with a text
 section, though that text section may have nothing but whitespace in
 it. A section may or may not have any code section in it.
 
-@c (port tokens next-section encode)
+@c (port tokens next-section encode sections)
 @<Process a section@>=
 (define sectnum (next-section))
 (case (car tokens)
@@ -1303,7 +1303,7 @@ want to print using the {\tt M} macro. In this and in starred
 sections, we want to typeset the code section if we have one right
 after it. 
 
-@c (port tokens sectnum encode)
+@c (port tokens sectnum encode sections)
 @<Process a normal section@>=
 (define body
   (let ([maybe (cadr tokens)])
@@ -1319,7 +1319,7 @@ after it.
 section, except that we need to extract the depth from the starred
 section.
 
-@c (port tokens sectnum encode)
+@c (port tokens sectnum encode sections)
 @<Process a starred section@>=
 (define-values (depth body)
   @<Scrape depth and body from starred section@>)
@@ -1377,7 +1377,7 @@ We may at first discover a program chunk for the top-level. We may
 have a named chunk without a captures and exports list, and we may
 finally have a case where the captures list is given. 
 
-@c (tokens port sectnum encode)
+@c (tokens port sectnum encode sections)
 @<Weave optional code chunk@>=
 (let ([txttkns (cddr tokens)])
   (cond
@@ -1414,7 +1414,7 @@ the captures and exports from the captures line using
 the previously defined |parse-captures-line|. Then we can do
 what we would do for any named chunk.
 
-@c (port sectnum txttkns encode)
+@c (port sectnum txttkns encode sections)
 @<Weave captures and named chunk@>=
 (unless (and (pair? (cdr txttkns)) (string? (cadr txttkns)))
   (error #f "expected captures line"
@@ -1439,20 +1439,20 @@ in terms of formatting. This means we can abstract away the code that
 manages the printing for both.
 
 @p
-(define (print-named-chunk port name code sectnum caps exps)
+(define (print-named-chunk port name code sectnum caps exps sections)
   (format port
-    "\\Y\\B\\4\\X~a:~a\\X${}\\E{}$\\6~n~a\\par~n~?~?"
+    "\\Y\\B\\4\\X~a:~a\\X${}\\E{}$\\6~n~a\\par~n~?~?~@[~?~]"
     sectnum name (chezweb-pretty-print code)
     "~@[\\CAP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~]"
     (list (and (not (null? caps)) caps))
-    ;"~@[\\6~]"
-    ;(list (and (not (null? caps)) exps))
     "~@[\\EXP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~]"
-    (list exps)))
+    (list exps)
+    (and (weave-sec-def? sections name sectnum) "~@[~a~]~@[~a~]")
+    (list (weave-sec-defs sections name) (weave-sec-refs sections name))))
 
 @ Now we can easily handle the named chunk.
 
-@c (txttkns port sectnum captures exports encode)
+@c (txttkns port sectnum captures exports encode sections)
 @<Weave named chunk@>=
 (unless (<= 4 (length txttkns))
   (error #f "Missing pieces of a named chunk" txttkns))
@@ -1465,14 +1465,15 @@ manages the printing for both.
   (let-values ([(rest body) 
                 (slurp-code (list-tail txttkns 3) encode texify-code)])
     (print-named-chunk
-      port (texify-section-text name) body sectnum captures exports)
+      port (texify-section-text name) body sectnum captures exports
+      sections)
     rest))
 
 @ And we can use the same basic techniques to handle the file
 chunk, with some slight variations on the codes that we're looking
 for. Namely, a file chunk does not have any captures or exports.
 
-@c (txttkns port sectnum encode)
+@c (txttkns port sectnum encode sections)
 @<Weave file chunk@>=
 (unless (<= 4 (length txttkns))
   (error #f "Missing pieces of a named chunk" txttkns))
@@ -1485,7 +1486,7 @@ for. Namely, a file chunk does not have any captures or exports.
   (let-values ([(rest body) 
                 (slurp-code (list-tail txttkns 3) encode texify-code)])
     (print-named-chunk
-      port (texify-filename name) body sectnum '() #f)
+      port (texify-filename name) body sectnum '() #f sections)
     rest))
 
 @ We have now completely defined the |weave-file| procedure, which we
@@ -1916,10 +1917,10 @@ the list of comma separated section number or numbers.
   (let ([res (hashtable-ref sections (strip-whitespace name) #f)])
     (and res 
          (let ([defs (section-info-defs res)])
-           (and (pair? defs)
+           (and (pair? defs) (>= (length defs) 2)
                 (format "\\A~[~;~{~s~}~;s~{~s and ~s~}~
                          ~:;s~{~#[~; and ~] ~s~^,~}~]."
-                        (length defs) defs))))))
+                        (length defs) (list-sort < defs)))))))
 
 @ The |weave-sec-refs| procedure is the same, except that it uses the 
 |U| macro and it uses section references instead of definitions.
@@ -1929,10 +1930,10 @@ the list of comma separated section number or numbers.
   (let ([res (hashtable-ref sections (strip-whitespace name) #f)])
     (and res 
          (let ([refs (section-info-refs res)])
-           (and (pair? refs)
+           (and (pair? refs) 
                 (format "\\U~[~;~{~s~}~;s~{~s and ~s~}~
                          ~:;s~{~#[~; and ~] ~s~^,~}~]."
-                        (length refs) refs))))))
+                        (length refs) (list-sort < refs)))))))
 
 @ The |weave-sec-def?| procedure has the following signature:
 
