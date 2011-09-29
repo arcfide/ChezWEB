@@ -1438,11 +1438,18 @@ except that we do some different things with the name of the file
 in terms of formatting. This means we can abstract away the code that
 manages the printing for both.
 
+We deviate from the above template a little bit in the case where we
+have a chunk that is extending another section definition of the same
+name. Specifically, we do not print the cross-references, and we add a +
+sign before the equivalence sign above. 
+
 @p
 (define (print-named-chunk port name code sectnum caps exps sections)
   (format port
-    "\\Y\\B\\4\\X~a:~a\\X${}\\E{}$\\6~n~a\\par~n~?~?~@[~?~]"
-    sectnum name (chezweb-pretty-print code)
+    "\\Y\\B\\4\\X~a:~a\\X${}~@[~a~]\\E{}$\\6~n~a\\par~n~?~?~@[~?~]"
+    sectnum name 
+    (and (not (weave-sec-def? sections name sectnum)) "\\mathrel+")
+    (chezweb-pretty-print code)
     "~@[\\CAP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~]"
     (list (and (not (null? caps)) caps))
     "~@[\\EXP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~]"
