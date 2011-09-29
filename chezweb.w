@@ -1184,8 +1184,8 @@ forms, or the like.
 program like Xe\TeX\ can be used on the resulting \TeX\ file that
 {\tt chezweave} outputs to make the PDF.
 
-$$\\{Missing figure here.}$$
-% $$\includegraphics[width=???]{chezweb-2.eps}$$
+% $$\\{Missing figure here.}$$
+$$\includegraphics[width=4in]{chezweb-2.eps}$$
 
 \noindent There are three distinct elements that make up
 weaving. Firstly, there is the actual weaving itself, which must take
@@ -1206,34 +1206,34 @@ order. We must keep track of the section number. Our macros that we
 can use for formatting these chunks are as follows.
 
 \medskip{\parindent = 2.5em
-\item{N}
+\item{\.{N}}
 {\bf Starred Sections.} This allows for starred sections. It expects
 two integers as the first parameters. These are, respectively, the
 depth and the section number. After that, it will read up to the first
 period for the section to highlight, and then the rest of the text
 will follow after that.
-\item{M}
+\item{\.{M}}
 {\bf Normal Sections.} This takes only the section number, and
 typesets a normal section.
-\item{Y}
+\item{\.{Y}}
 {\bf Vertical Space.} Provides a little vertical space for use between
 the text and code parts of a section.
-\item{B}
+\item{\.{B}}
 {\bf Code.} Begins the typesetting mode for code.
-\item{X}
+\item{\.{X}}
 {\bf Chunk Name.} Used to typeset a chunk name in a section, either
 for files or for named chunks. It expects a section number, followed
 by a colon, followed by another \.{X}.
-\item{4}
+\item{\.{4}}
 {\bf Backspace.} This is used to backspace a bit, basically, to
 backspace one notch.
-\item{fi}
+\item{\.{fi}}
 {\bf End section.} This follows the end of the section.
-\item{inx}
+\item{\.{inx}}
 {\bf Index.} Starts up the index.
-\item{fin}
+\item{\.{fin}}
 {\bf Finish.} Ends the index.
-\item{con}
+\item{\.{con}}
 {\bf Sections.} Completes the section names.\par}\medskip
 
 \noindent

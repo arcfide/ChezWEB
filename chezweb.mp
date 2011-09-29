@@ -17,4 +17,38 @@ beginfig(1);
 	label("Top-level Code", (x+ss,y+sh));
 endfig;
 
+beginfig(2);
+	numeric x, y, bx, bs;
+	numeric s, ss, sss, ssss, sh;
+
+	s := 18pt; ss := s*2; sss := s*3; ssss := s*4;
+	sh := s/2; sq := s/3;
+
+	bx := 9pt; by := 9pt;
+
+	x := bx; y := by;
+	draw (x , y)--(x+ss,y)--(x+ss,y+s)--(x,y+s)--cycle;
+	x := x+ssss+ss;
+	draw (x,y)--(x+ss,y)--(x+ss,y+s)--(x,y+s)--cycle;
+	x := x+ssss+ss;
+	draw (x,y)--(x+ss,y)--(x+ss,y+s)--(x,y+s)--cycle;
+
+	x := bx+ss; y := by+sh;
+	drawarrow (x,y)--(x+ssss,y);
+	x := x+ssss+ss;
+	drawarrow (x,y)--(x+ssss,y);
+
+	x := bx+s; 
+	label(btex {\tt WEB} etex, (x,y));
+	x := x+ss*3; 
+	label(btex \TeX etex, (x,y));
+	x := x+ss*3;
+	label(btex {\rm PDF} etex, (x,y));
+
+	x := bx+ssss; y := y+sq;
+	label(btex Chez{\tt WEAVE} etex, (x,y));
+	x := x+ss*3;
+	label(btex Xe\TeX etex, (x,y));
+endfig;
+
 end
