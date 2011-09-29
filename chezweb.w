@@ -600,7 +600,7 @@ tokens as well. The list of tokens is accumulated in reverse order.
            (loop
              (cons* token (list->string (reverse cur)) tokens)
              '())))]
-    [(#\>) @<Parse possible @@>= delimiter@>]
+    [(#\>) @<Parse possible |@@>=| delimiter@>]
     [else
       (if (eof-object? nc)
           (loop tokens cur)
@@ -622,7 +622,7 @@ will treat it like a normal |@@>| code, which is a code which
 does not strip the rest of the line's contents.
 
 @c (port cur loop tokens c nc)
-@<Parse possible @@>= delimiter@>=
+@<Parse possible |@@>=| delimiter@>=
 (define (extend tok ncur)
   (if (null? cur)
       (loop (cons tok tokens) ncur)
@@ -850,13 +850,26 @@ string that we find to the |*default*| key in the |top-level| table.
 
 @c (loop tokens top-level)
 @<Extend default top-level@>=
-(define (encode x) (format "|~a|" x))
 (define-values (ntkns body) 
-  (slurp-code (cdr tokens) encode (lambda (x) x)))
+  (slurp-code (cdr tokens) tangle-encode (lambda (x) x)))
 (hashtable-update! top-level '*default*
   (lambda (cur) (string-append cur body))
   "")
 (loop ntkns '() #f)
+
+@ I'd like to take a moment here to discuss what |tangle-encode| is. Our
+|slurp-code| procedure, which is defined elsewhere, takes an encoder,
+which will expect to give it a string for encoding a chunk reference
+name. The job of the encoder is to make sure that the string that it
+returns is something that belongs as valid code. For weaving, this is a
+form of \TeX{}ififcation, while with tangling, it's turning that name
+into a proper Scheme identifier. 
+We can assume that the name will be stripped of extraneous
+whitespace. The encoder will be a pretty straightforward use of
+|format|.
+
+@p
+(define (tangle-encode x) (format "~s" (string->symbol x)))
 
 @ Handling file name top-level updates works much like a named chunk,
 except that we do not have to deal with the issues of capture
@@ -1004,7 +1017,6 @@ later referred to as |name| and |body| rather than as |car|s and
 
 @c (tokens) => (name body tknsrest)
 @<Verify and extract delimited chunk@>=
-(define (encode x) (format "|~a|" x))
 (define-values (name body tknsrest)
   (let ()
     (unless (<= 4 (length tokens))
@@ -1015,7 +1027,9 @@ later referred to as |name| and |body| rather than as |car|s and
       (unless (string? name)
         (error #f "Expected name string" name))
       (let-values ([(ntkns body) 
-                    (slurp-code (list-tail tokens 3) encode (lambda (x) x))])
+                    (slurp-code (list-tail tokens 3) 
+				tangle-encode 
+				(lambda (x) x))])
         (values name body ntkns)))))
 
 @ We also want to define out own procedure to strip the whitespace
@@ -1436,7 +1450,7 @@ formatting follows a slightly more complicated template:
 \noindent The above form is basically the same for file chunks,
 except that we do some different things with the name of the file
 in terms of formatting. This means we can abstract away the code that
-manages the printing for both.
+manages the printing for both. 
 
 We deviate from the above template a little bit in the case where we
 have a chunk that is extending another section definition of the same
@@ -1444,10 +1458,10 @@ name. Specifically, we do not print the cross-references, and we add a +
 sign before the equivalence sign above. 
 
 @p
-(define (print-named-chunk port name code sectnum caps exps sections)
+(define (print-named-chunk port texify name code sectnum caps exps sections)
   (format port
     "\\Y\\B\\4\\X~a:~a\\X${}~@[~a~]\\E{}$\\6~n~a\\par~n~?~?~@[~?~]"
-    sectnum name 
+    sectnum (texify name)
     (and (not (weave-sec-def? sections name sectnum)) "\\mathrel+")
     (chezweb-pretty-print code)
     "~@[\\CAP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~]"
@@ -1472,7 +1486,7 @@ sign before the equivalence sign above.
   (let-values ([(rest body) 
                 (slurp-code (list-tail txttkns 3) encode texify-code)])
     (print-named-chunk
-      port (texify-section-text name) body sectnum captures exports
+      port texify-section-text name body sectnum captures exports
       sections)
     rest))
 
@@ -1493,7 +1507,7 @@ for. Namely, a file chunk does not have any captures or exports.
   (let-values ([(rest body) 
                 (slurp-code (list-tail txttkns 3) encode texify-code)])
     (print-named-chunk
-      port (texify-filename name) body sectnum '() #f sections)
+      port texify-filename name body sectnum '() #f sections)
     rest))
 
 @ We have now completely defined the |weave-file| procedure, which we

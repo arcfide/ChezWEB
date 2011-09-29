@@ -115,8 +115,7 @@
 )
 
 (@< (|Extend default top-level| loop tokens top-level)
-(define (encode x) (format "|~a|" x))
-(define-values (ntkns body) (slurp-code (cdr tokens) encode))
+(define-values (ntkns body) (slurp-code (cdr tokens) tangle-encode))
 (hashtable-update! top-level '*default*
   (lambda (cur) (string-append cur body))
   "")
@@ -190,7 +189,8 @@
         (error #f "Expected closing @>=" name closer)) 
       (unless (string? name)
         (error #f "Expected name string" name))
-      (let-values ([(ntkns body) (slurp-code (list-tail tokens 3) encode)])
+      (let-values ([(ntkns body) 
+		    (slurp-code (list-tail tokens 3) tangle-encode)])
         (values name body ntkns)))))
 )
 
@@ -397,6 +397,7 @@
            res (encode (strip-whitespace (cadr tokens)))))]
       [else (values tokens (verify res))])))
 
+(define (tangle-encode x) (format "~s" (string->symbol x)))
 
 (tangle-file "chezweb.w")
 (exit 0)
