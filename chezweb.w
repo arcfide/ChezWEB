@@ -1430,7 +1430,7 @@ formatting follows a slightly more complicated template:
 
 \medskip\verbatim
 \Y\B\4\X<sectnum>:<name>\X${}\E{}$\6
-<code>\par<cap_exps>\fi
+<code>\par<cap_exps><cross_refs>\fi
 !endverbatim \medskip
 
 \noindent The above form is basically the same for file chunks,
@@ -1911,6 +1911,17 @@ sections table.
 The format string itself should be the |A| macro followed by 
 an |s| if there is more than one extra section definition site, and then
 the list of comma separated section number or numbers.
+
+We only use this function in the main chunk printing, so we don't have
+to worry about its use in the section index. This makes a difference,
+and this is why we don't provide a string if there is only one section
+number that defines a section. Specifically, we only give a cross
+reference to other section definitions if other sections exist. It
+doesn't make much sense to cross-reference yourself. However, this means
+that this procedure makes no sense in the context of the section index,
+since the section index needs to include all of the section numbers.
+Fortunately, the formatting for the section index is different, simpler
+even. Thus, we don't use this procedure for that.
 
 @p
 (define (weave-sec-defs sections name)
