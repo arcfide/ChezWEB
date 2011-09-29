@@ -1,10 +1,12 @@
-* Find a way of dealing with libraries
-* Implement Scribble
+* Implement implicit indexing
+  - Start with captures
+* Include
+* REPL printing in texts
 * Non-hygienic chunks
 * Pretty printer for Scheme
-* REPL printing in texts
-* Include
 * Deal with Unicode properly
+* Implement Scribble
+* Find a way of dealing with libraries
 * Add a verification pass so that we don't have to verify the code in 
   both weaving and tangling sections.
 

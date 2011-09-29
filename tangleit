@@ -7,5 +7,8 @@ chmod +x cheztangle.ss
 chmod +x chezweave.ss
 echo '(compile-program "cheztangle.ss")' | scheme -q
 echo '(compile-program "chezweave.ss")' | scheme -q
+echo "Renaming cheztangle.so to cheztangle"
 mv cheztangle.so cheztangle
+echo "Renaming chezweave.so to chezweave"
 mv chezweave.so chezweave
+echo '(compile-library "runtime.sls")' | scheme -q

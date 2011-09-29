@@ -83,7 +83,14 @@ internally. It also encourages a cleaner approach to code reuse, and
 discourages hacks to get around the disadvantages of traditional
 literate programming.
 
-@* Literate Programming in General.
+@ The current version of ChezWEB is 2.0 and the current implementation
+is considered to be in an alpha quality state.
+
+@p
+(define (display-chezweb-version tangle/weave)
+  (printf "This is ~a, ChezWEB Version 2.0 Alpha.~n" tangle/weave))
+
+@* 2 Literate Programming in General.
 Before we move on to \ChezWEB\ proper, no proper uses guide can
 neglect discussing what Literate Programming actually means.  If you
 already know what Literate Programming is, then feel free to move past
@@ -243,14 +250,8 @@ one?
 There is nothing wrong with traditional Literate Programming, but when
 I write in Scheme, I want more.  Thus, I wrote ChezWEB.
 
-@* The ChezWEB System.
-
-
-@* Hygienic Literate Programming.
-
-@* How ChezWEB works.
+@* 2 The ChezWEB System.
 {\it This section is out of date.}
-
 ChezWEB is a literate programming system for the R6RS Scheme language.
 It is implemented using Chez Scheme, but there is no reason it could
 not also be ported to other Scheme implementations as well.  It allows
@@ -296,7 +297,7 @@ chezweave program wraps this library to provide a convenient interface
 for generating or ``weaving'' the program into a printable,
 human-readable format.
 
-@* Using ChezWEB.
+@* 2 Hygienic Literate Programming.
 
 @* Control Codes Cheat Sheet. This section describes in brief the
 function and syntax of every control code. It does not go into detail,
@@ -571,6 +572,7 @@ their own abstraction and have the chunk like reordering without
 actually requiring them to write their entire program in \ChezWEB{}.
 
 @(runtime.sls@>=
+#!chezscheme
 (library (arcfide chezweb runtime)
   (export @@< =>)
   (import (chezscheme))
@@ -789,8 +791,10 @@ chezweb.ss}.
 #! /usr/bin/env scheme-script
 (import (chezscheme))
 
-(module (tangle-file)
+(module (tangle-file display-chezweb-version)
   (include "chezweb.ss"))
+
+(display-chezweb-version "CHEZTANGLE")
 
 (unless (= 1 (length (command-line-arguments)))
   (printf "Usage: cheztangle <web_file>\n")
@@ -1149,9 +1153,10 @@ correct contents of a file that we are writing to.
 (call-with-output-file output-file
   (lambda (output-port)
     (when (eq? file '*default*)
-      (put-string output-port "#!chezscheme\n")
-      (put-string output-port runtime-code)
+      (printf "Tangling ~a~n" output-file)
+      (format output-port "#!chezscheme~n~a" runtime-code)
       @<Write named chunks to file@>)
+    (unless (eq? file '*default*) (printf "Outputing ~a~n" output-file))
     (put-string output-port
       (hashtable-ref top-level-chunks 
         (if (eq? file '*default*) '*default* output-file) 
@@ -1289,17 +1294,27 @@ Let's examine the top-level loop that iterates over the tokens.
     (lambda (port)
       @<Define section iterator@>
       (define tokens
-        (write-index
-          file (call-with-input-file file chezweb-tokenize)))
+        (write-index file (call-with-input-file file chezweb-tokenize)))
       (define sections (index-sections file tokens))
       @<Define weave chunk reference encoder@>
+      (printf "Weaving ~a~n" file)
       (format port "\\input chezwebmac~n~n")
-      (let loop ([tokens tokens])
-        (when (pair? tokens)
-          (call-with-values (lambda () @<Process a section@>)
-            loop)))
+      @<Weave sections@>
       (format port "\\inx~n\\fin~n\\con~n"))
     'replace))
+
+@ We weave the sections by iterating over the tokens and processing at
+a section at a time. We expect at each stage to have the set of tokens
+that were left after processing, and we can iterate on that.
+
+@c (port tokens next-section encode sections)
+@<Weave sections@>=
+(let loop ([tokens tokens])
+  (when (pair? tokens)
+    (call-with-values 
+      (lambda () @<Process a section@>)
+      loop)))
+
 
 @ For any given section, we know exactly what to do by looking at
 the associated control code that started it. The only exception is
@@ -1549,8 +1564,10 @@ it uses |weave-file| instead of |tangle-file|.
 #! /usr/bin/env scheme-script
 (import (chezscheme))
 
-(module (weave-file)
+(module (weave-file display-chezweb-version)
   (include "chezweb.ss"))
+
+(display-chezweb-version "CHEZWEAVE")
 
 (unless (= 1 (length (command-line-arguments)))
   (printf "Usage: chezweave <web_file>\n")
@@ -1619,7 +1636,7 @@ italics and so forth using the double backslash macro.
 (define (texify-filename txt)
   (format "\\\\{~a}" txt))
 
-@* Handling the indexing. Generating the index is a combined
+@* Handling the Indexing. Generating the index is a combined
 matter of explicit and implicit indexing. At the moment, we do
 no implicit indexing, and only explicit indexing is supported.
 There are three explicit index codes:
@@ -1653,6 +1670,7 @@ anything at the \TeX\ level.
 (define (write-index file tokens)
   (let ([ofile (format "~a.idx" (path-root file))]
         [index (make-hashtable string-hash string=?)])
+    (printf "Writing index file...~n")
     (call-with-output-file ofile
       (lambda (port)
         (let loop ([tokens tokens] [res '()] [sectnum 0])
@@ -1798,6 +1816,7 @@ where that chunk name is defined, and where the chunk is referenced.
 
 @p
 (define (index-sections file tokens)
+  (printf "Writing section index...~n")
   (let ([sections (make-hashtable string-hash string=?)])
     (let loop ([tokens tokens] [sectnum 0])
       (when (pair? tokens)

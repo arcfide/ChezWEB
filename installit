@@ -1,0 +1,51 @@
+#! /bin/sh
+
+VERSION=2.0
+OWNER=root
+GROUP=root
+
+INSTALLBIN="install -g $GROUP -o $OWNER -m 755"
+INSTALLDOC="install -g $GROUP -o $OWNER -m 644"
+
+if [ -z $1 ]; then
+  echo "Usage: installit <prefix>"
+  exit 1
+fi
+
+PREFIX=$1
+TEXDIR=${TEXDIR:-$PREFIX/share/texmf-local/tex/generic}
+DOCDIR=${DOCDIR:-$PREFIX/doc/chezweb-$VERSION}
+BINDIR=${BINDIR:-$PREFIX/bin}
+LIBDIR=${LIBDIR:-$PREFIX/lib/chezweb}
+
+echo "Installing to $PREFIX"
+echo "Tex Macros installed to $TEXDIR"
+echo "Documentation installed to $DOCDIR"
+echo "Binaries installed to $BINDIR"
+echo "Libraries installed to $LIBDIR"
+
+set -e 
+
+echo -n "Making directories..."
+mkdir -p $TEXDIR $DOCDIR $BINDIR $LIBDIR
+echo "Done."
+
+# Copy documentation
+echo -n "Installing documentation..."
+$INSTALLDOC README chezweb.pdf $DOCDIR
+echo "Done."
+
+# Install libraries
+echo -n "Installing libraries..."
+$INSTALLDOC runtime.so $LIBDIR
+echo "Done."
+
+# Install binaries
+echo -n "Installing binaries..."
+$INSTALLBIN chezweave cheztangle $BINDIR
+echo "Done."
+
+# Install tex macros
+echo -n "Installing tex macros..."
+$INSTALLDOC chezwebmac.tex $TEXDIR
+echo "Done."

@@ -2,6 +2,7 @@
 
 set -e
 mpost chezweb.mp
+echo "Renaming ChezWEB MetaPost diagrams."
 mv chezweb.1 chezweb-1.eps
 mv chezweb.2 chezweb-2.eps
 mv chezweb.3 chezweb-3.eps
