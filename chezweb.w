@@ -705,6 +705,9 @@ and the other, the code body itself as a single string.
 
 @ We will verify the return result to make sure that we don't have a 
 case that we don't want, such as when there is an empty program body.
+We also want to make sure that we strip off any of the whitespace before
+and after the piece of code, which we don't need, and which can affect
+our attempts at pretty printing.
 
 @c (tokens) => (verify)
 @<Define slurp verifier@>=
@@ -714,7 +717,7 @@ case that we don't want, such as when there is an empty program body.
       (list-head tokens (min (length tokens) 3))))
   (when (for-all char-whitespace? (string->list x))
     (error #f "empty chunk body" x))
-  x)
+  (strip-whitespace x))
 
 @ The syntax for a chunk reference is an open and closer delimiting a
 chunk name string:
@@ -1188,7 +1191,7 @@ definable in any order.
   (lambda (name)
     (let ([cell (hashtable-ref captures name '(() . #f))])
       (format output-port
-        "(@@< (~s ~{~s ~}) ~@@[=> (~{~s ~})~]~n~a)~n~n"
+        "(@@< (~s ~{~s ~}) ~@@[=> (~{~s ~})~]~n~a~n)~n~n"
         name (car cell) (cdr cell)
         (hashtable-ref named-chunks name ""))))
   (vector->list (hashtable-keys named-chunks)))
@@ -1638,7 +1641,8 @@ italics and so forth using the double backslash macro.
 
 @* Handling the Indexing. Generating the index is a combined
 matter of explicit and implicit indexing. At the moment, we do
-no implicit indexing, and only explicit indexing is supported.
+implicit indexing of the captures and exports on named sections, 
+and we also support explicit indexing.
 There are three explicit index codes:
 
 \medskip{\parindent = 2em
@@ -1647,10 +1651,11 @@ There are three explicit index codes:
 \item{|@@:|} Typeset the index using the \.{\\9} macro.
 \par}\medskip
 
-\noindent These form the main part of the explicit index. However,
-there is implicit indexing of the chunks. Named chunks are listed
+\noindent These form the main part of the explicit index. 
+There is also implicit indexing of the code section names. 
+Named chunks are listed
 after the index is complete. Generating the index and the chunk
-names can be done in two distinct passes. Let's deal with explicit
+names can be done in two distinct passes. Let's deal with normal
 indexing first.
 
 One major issue with using the tokens and not turning them into an
@@ -1691,6 +1696,7 @@ together.
   [(memq (car tokens) '(@@* |@@ |))
    (loop (cdr tokens) (cons (car tokens) res) (1+ sectnum))]
   [(memq (car tokens) '(@@^ @@. @@:)) @<Handle index token@>]
+  [(eq? '@@c (car tokens)) @<Index captures line@>]
   [(symbol? (car tokens))
    (loop (cdr tokens) (cons (car tokens) res) sectnum)]
   [(string? (car tokens)) @<Deal with string token@>]
@@ -1709,13 +1715,27 @@ types.
 @<Handle index token@>=
 (let ([code (car tokens)])
   @<Verify index syntax@>
-  (hashtable-update! index (strip-whitespace (cadr tokens))
+  (index-db-insert index code (cadr tokens) sectnum)
+  (loop (cdddr tokens) res sectnum))
+
+@ We don't want to add any elements to our section number lists that is
+there already, so we have |set-cons| to do this for us.
+
+@p
+(define (set-cons x lst) (if (memv x lst) lst (cons x lst)))
+
+@ We also want to make it easy to insert a new entry into the index
+database at any time, so we will make an insertion procedure that will
+insert a new index with a given section into the index database.
+
+@p
+(define (index-db-insert index code entry sectnum)
+  (hashtable-update! index (strip-whitespace entry)
     (lambda (db)
       (let ([res (assq code db)])
-        (set-cdr! res (cons sectnum (cdr res)))
-        db))
-    (list (cons '@@^ '()) (cons '@@. '()) (cons '@@: '())))
-  (loop (cdddr tokens) res sectnum))
+	(set-cdr! res (set-cons sectnum (cdr res)))
+	db))
+    (map list '(@@^ @@. @@: @@|\|))))
 
 @ Our index syntax is easy to verify. It should have the beginning
 control code, followed by a string which is the index entry, and
@@ -1730,6 +1750,22 @@ the closing |@@>| tag.
 (unless (eq? '@@> (caddr tokens))
   (error #f "expected index entry closer" (list-head tokens 3)))
 
+@ When we encounter a captures line, we want to insert an index entry
+for every symbol that we encounter in that line. We will make use of the
+|parse-captures-line| procedure to get out the symbols for the captures
+line.
+
+@c (loop tokens sectnum res index)
+@<Index captures line@>=
+(define (insert x) 
+  (and (< 1 (string-length x))
+       (index-db-insert index '@@|\| x sectnum)))
+(let ([body (cadr tokens)])
+  (unless (string? body) (error #f "expected captures line" body))
+  (let-values ([(captures exports) (parse-captures-line body)])
+    (for-each insert (map symbol->string captures))
+    (and exports (for-each insert (map symbol->string exports))))
+  (loop (cddr tokens) (cons* (cadr tokens) (car tokens) res) sectnum))
 
 @ When we encounter a string in the token list, we need to make sure
 that we concatenate it in the right order if the string at the head of
@@ -1749,7 +1785,8 @@ leave it and add it to the result list as normal.
 
 @ Once we have the entire index in the form of a hashtable, we want
 to sort them in the appropriate order and print each one. We will
-print the |@@:| codes first, followed by |@@^| and |@@.|. Each
+print the identifiers first, 
+the |@@:| codes second, followed by |@@^| and |@@.|. Each
 code will be associated with a number of sections, and we will
 print the section in ascending order. A single index entry looks
 like:
@@ -1768,9 +1805,11 @@ the code and the sections are comma separated.
 (for-each
   (lambda (entry)
     (let ([name (car entry)]
+	  [ident (cdr (assq '@@|\| (cdr entry)))]
           [roman (cdr (assq '@@^ (cdr entry)))]
           [typew (cdr (assq '@@. (cdr entry)))]
           [nine (cdr (assq '@@: (cdr entry)))])
+      (when (pair? ident) (print name "\\\\" ident))
       (when (pair? nine) (print name "\\9" nine))
       (when (pair? roman) (print name " " roman))
       (when (pair? typew) (print name "\\." typew))))
@@ -1867,8 +1906,8 @@ from, depending on the closing delimiter.
                    (not (eq? type (section-info-type cur))))
           (error #f "section type mismatch" name))
         (case delim 
-          [(@@>) (make-section-info type defs (cons sectnum refs))]
-          [(@@>=) (make-section-info type (cons sectnum defs) refs)]
+          [(@@>) (make-section-info type defs (set-cons sectnum refs))]
+          [(@@>=) (make-section-info type (set-cons sectnum defs) refs)]
           [else (error #f "this can't happen")])))
     (make-section-info #f '() '()))
   (loop (list-tail tokens 3) sectnum))

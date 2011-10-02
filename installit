@@ -13,10 +13,11 @@ if [ -z $1 ]; then
 fi
 
 PREFIX=$1
-TEXDIR=${TEXDIR:-$PREFIX/share/texmf-local/tex/generic}
+TEXDIR=${TEXDIR:-$PREFIX/share/texmf-local}
 DOCDIR=${DOCDIR:-$PREFIX/doc/chezweb-$VERSION}
 BINDIR=${BINDIR:-$PREFIX/bin}
 LIBDIR=${LIBDIR:-$PREFIX/lib/chezweb}
+TEXSUB=${TEXDIR}/tex/generic
 
 echo "Installing to $PREFIX"
 echo "Tex Macros installed to $TEXDIR"
@@ -27,7 +28,7 @@ echo "Libraries installed to $LIBDIR"
 set -e 
 
 echo -n "Making directories..."
-mkdir -p $TEXDIR $DOCDIR $BINDIR $LIBDIR
+mkdir -p $TEXSUB $DOCDIR $BINDIR $LIBDIR
 echo "Done."
 
 # Copy documentation
@@ -47,5 +48,5 @@ echo "Done."
 
 # Install tex macros
 echo -n "Installing tex macros..."
-$INSTALLDOC chezwebmac.tex $TEXDIR
+$INSTALLDOC chezwebmac.tex $TEXSUB
 echo "Done."
