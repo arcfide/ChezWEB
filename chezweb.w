@@ -504,7 +504,7 @@ tokens as well. The list of tokens is accumulated in reverse order.
   (case nc
     [(#\@@) (loop tokens (cons c cur) ports)]
     [(#\q) (get-line (car ports)) (loop tokens cur ports)]
-    [(#\space #\< #\p #\* #\e #\r #\( #\^ #\. #\: #\i #\c) ;)
+    [(#\space #\< #\p #\* #\e #\r #\( #\^ #\. #\: #\c) ;)
      @<Add buffer and control code to token list and loop@>]
     [(#\>) @<Parse possible |@@>=| delimiter and loop@>]
     [(#\i) @<Include new file in ports list and loop@>]
