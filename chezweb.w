@@ -433,18 +433,60 @@ an ampersand; most are only two characters, though the |@@>=| form has
 more.  This makes it fairly straightforward to build a tokenizer
 directly. We do this without much abstraction below.
 
+We have the following parameters in our main loop:
+
+\medskip{\parindent = 0.75in
+\item{|tokens|} The reversed list of accumulated tokens so far.
+\item{|cur|} A character list buffer for accumulated string tokens.
+\item{|ports|} The set of file ports to read from, in order.\par}
+\medskip
+
+\noindent I use the |ports| list because of the |@@i| control code which
+is discussed further down.
+
 @p
 (define (chezweb-tokenize port)
-  (let loop ([tokens '()] [cur '()])
-    (let ([c (read-char port)])
-      (cond
-        [(eof-object? c)
-         (reverse
-           (if (null? cur)
-               tokens
-               (cons (list->string (reverse cur)) tokens)))]
-        [(char=? #\@@ c) @<Parse possible control code@>]
-        [else (loop tokens (cons c cur))]))))
+  (let loop ([tokens '()] [cur '()] [ports (list port)])
+    (if (null? ports)
+        @<Finish tokenizing and return token list@>
+        (let ([c (read-char (car ports))])
+          (cond
+           [(eof-object? c) @<Finish tokenizing port and loop@>]
+           [(char=? #\@@ c) @<Parse possible control code and loop@>]
+           [else (loop tokens (cons c cur) ports)])))))
+
+@ When we run out of ports to process, we want to handle any left over
+elements in the |cur| list and return the reversed list of tokens.
+
+@c (tokens cur)
+@<Finish tokenizing and return token list@>=
+(reverse
+  (if (null? cur)
+      tokens
+      (cons (list->string (reverse cur)) tokens)))
+
+@ When we run out of characters at one port, we have to consider this as
+a token boundary, so that we don't collapse the code encapsulated inside
+of one included file with the rest. That is, you should not be able to
+do something like this:
+
+\medskip\verbatim
+@@i blah.w
+kdkdkdksljklsdl
+!endverbatim \medskip
+
+\noindent In the above, presumably the {\tt blah.w} file will end in
+some string and then you can continue processing from there. You want
+the string starting with the line after the include to be its own
+distinct token element, and not be merged with any previous tokens.
+
+@c (loop tokens cur ports)
+@<Finish tokenizing port and loop@>=
+(if (null? cur)
+    (loop tokens cur (cdr ports))
+    (loop (cons (list->string (reverse cur)) tokens)
+          '()
+          (cdr ports)))
 
 @ Most of the control codes can be determined by reading ahead only
 one more character, but there is one that requires reading two more
@@ -456,24 +498,54 @@ as the appropriate symbol. We will first add any buffer left in |cur|
 to our tokens list, and then add our symbolic token to the list of
 tokens as well. The list of tokens is accumulated in reverse order.
 
-@c (c cur tokens port loop)
-@<Parse possible control code@>=
-(let ([nc (read-char port)])
+@c (c cur tokens loop ports)
+@<Parse possible control code and loop@>=
+(let ([nc (read-char (car ports))])
   (case nc
-    [(#\@@) (loop tokens (cons c cur))]
-    [(#\q) (get-line port) (loop tokens cur)]
+    [(#\@@) (loop tokens (cons c cur) ports)]
+    [(#\q) (get-line (car ports)) (loop tokens cur ports)]
     [(#\space #\< #\p #\* #\e #\r #\( #\^ #\. #\: #\i #\c) ;)
-     (let ([token (string->symbol (string c nc))])
-       (if (null? cur)
-           (loop (cons token tokens) '())
-           (loop
-             (cons* token (list->string (reverse cur)) tokens)
-             '())))]
-    [(#\>) @<Parse possible |@@>=| delimiter@>]
+     @<Add buffer and control code to token list and loop@>]
+    [(#\>) @<Parse possible |@@>=| delimiter and loop@>]
+    [(#\i) @<Include new file in ports list and loop@>]
     [else
       (if (eof-object? nc)
-          (loop tokens cur)
-          (loop tokens (cons* nc c cur)))]))
+          (loop tokens cur ports)
+          (loop tokens (cons* nc c cur) ports))]))
+
+@ For the control codes that don't require any additional parsing, we
+can simply add the |cur| buffer if it is non-empty and then add the
+contorl code to the list of tokens.
+
+@c (c nc cur tokens loop ports)
+@<Add buffer and control code to token list and loop@>=
+(let ([token (string->symbol (string c nc))])
+  (if (null? cur)
+      (loop (cons token tokens) '() ports)
+      (loop (cons* token (list->string (reverse cur)) tokens)
+            '() ports)))
+
+@ When we encounter and include directive/code, we want to splice in the
+content from the file as its own set of sections. We do this by adding
+the file's port to the queue of |ports|. However, to maintain the
+boundaries of sections, we also need to clear out things like the |cur|
+buffer when we do this. We expect that the line of the include code
+should contain a Scheme string that contains the path to the file. We
+use this Scheme string notation instead of just a raw string because we
+want to have some way of specifying strange files that may have
+whitespace and other nonesense at the beginning and end of them, and so
+forth. 
+
+@c (loop ports cur tokens) 
+@<Include new file in ports list and loop@>=
+(loop (if (null? cur)
+          tokens
+          (cons (list->string (reverse cur)) tokens))
+      '()
+      (cons (open-input-file 
+             (with-input-from-string (get-line (car ports)) 
+                                     read))
+            ports))
 
 @ When we encounter the sequence |@@>| in our system, we may have a
 closing delimiter, but we won't know that until we read ahead a bit
@@ -490,17 +562,16 @@ If we do not find the correct character for closing, then we
 will treat it like a normal |@@>| code, which is a code which
 does not strip the rest of the line's contents.
 
-@c (port cur loop tokens c nc)
-@<Parse possible |@@>=| delimiter@>=
+@c (cur loop tokens c nc ports)
+@<Parse possible |@@>=| delimiter and loop@>=
 (define (extend tok ncur)
   (if (null? cur)
-      (loop (cons tok tokens) ncur)
-      (loop
-        (cons* tok (list->string (reverse cur)) tokens)
-        ncur)))
-(let ([nnc (read-char port)])
+      (loop (cons tok tokens) ncur ports)
+      (loop (cons* tok (list->string (reverse cur)) tokens)
+            ncur ports)))
+(let ([nnc (read-char (car ports))])
   (if (char=? #\= nnc)
-      (begin (get-line port) (extend '@@>= '()))
+      (begin (get-line (car ports)) (extend '@@>= '()))
       (extend '@@> (list nnc))))
 
 @* Processing code bodies. When we are dealing with a token list,
@@ -909,8 +980,8 @@ later referred to as |name| and |body| rather than as |car|s and
         (error #f "Expected name string" name))
       (let-values ([(ntkns body) 
                     (slurp-code (list-tail tokens 3) 
-				tangle-encode 
-				(lambda (x) x))])
+                                tangle-encode 
+                                (lambda (x) x))])
         (values name body ntkns)))))
 
 @ We also want to define out own procedure to strip the whitespace
@@ -1575,8 +1646,8 @@ insert a new index with a given section into the index database.
   (hashtable-update! index (strip-whitespace entry)
     (lambda (db)
       (let ([res (assq code db)])
-	(set-cdr! res (set-cons sectnum (cdr res)))
-	db))
+        (set-cdr! res (set-cons sectnum (cdr res)))
+        db))
     (map list '(@@^ @@. @@: @@|\|))))
 
 @ Our index syntax is easy to verify. It should have the beginning
@@ -1647,7 +1718,7 @@ the code and the sections are comma separated.
 (for-each
   (lambda (entry)
     (let ([name (car entry)]
-	  [ident (cdr (assq '@@|\| (cdr entry)))]
+          [ident (cdr (assq '@@|\| (cdr entry)))]
           [roman (cdr (assq '@@^ (cdr entry)))]
           [typew (cdr (assq '@@. (cdr entry)))]
           [nine (cdr (assq '@@: (cdr entry)))])

@@ -1,5 +1,4 @@
 * Implement implicit indexing
-  - Start with captures
 * Include
 * REPL printing in texts
 * Non-hygienic chunks
