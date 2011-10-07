@@ -28,8 +28,32 @@ TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 }
 
-@* Preface.
-Some time ago, the now Professor Emeritus of the Art of Computer
+@* Introduction. This document describes the implementation of the
+\ChezWEB\ system of documentation and programming. It is modelled
+closely after the \WEB\
+%\footnote{Knuth, ``WEB.''}
+and \CWEB\
+%\footnote{Author, ``\CWEB\.''}
+systems. It allows a Chez Scheme programmer to write programs of
+higher quality and better documentation. It produces print-quality
+output for documents, and delivers programming convenience for doing
+annotations and programming illustration. It also implements a new and
+novel concept in Literate Programming: Hygienic LP. Hygienic literate
+programming enables the programmer to explicitly control the
+visibility of variables inside and outside of a chunk. This provides
+the user with a cleaner and more reliable \WEB\ than would otherwise
+be had. Notably, it means that you never have to worry about variables
+accidently capturing or overwriting ones that you have used
+internally. It also encourages a cleaner approach to code reuse, and
+discourages hacks to get around the disadvantages of traditional
+literate programming.
+
+@ Readers of this program are expected to be familiar with the
+\ChezWEB\ guide, as this program does not discuss the language at an
+user level in any detail. Instead, we concern ourselves here chiefly
+with the implementation of the \WEB\ system itself. 
+
+@ Some time ago, the now Professor Emeritus of the Art of Computer
 Programming Donald E. Knuth began writing programs.  Sometime after
 that, he began to construct programs in a new manner.  This manner, he
 documented and labeled ``Literate Programming.'' In Professor Knuth's
@@ -62,26 +86,6 @@ but I hope that those who use it find it both appealing and efficient
 for delivering programs of higher quality, that others can read and
 understand more easily, and that can stand the rigors of many eyes and
 fingers working over the document.
-                   
-@* Introduction. This document describes the implementation of the
-\ChezWEB\ system of documentation and programming. It is modelled
-closely after the \WEB\
-%\footnote{Knuth, ``WEB.''}
-and \CWEB\
-%\footnote{Author, ``\CWEB\.''}
-systems. It allows a Chez Scheme programmer to write programs of
-higher quality and better documentation. It produces print-quality
-output for documents, and delivers programming convenience for doing
-annotations and programming illustration. It also implements a new and
-novel concept in Literate Programming: Hygienic LP. Hygienic literate
-programming enables the programmer to explicitly control the
-visibility of variables inside and outside of a chunk. This provides
-the user with a cleaner and more reliable \WEB\ than would otherwise
-be had. Notably, it means that you never have to worry about variables
-accidently capturing or overwriting ones that you have used
-internally. It also encourages a cleaner approach to code reuse, and
-discourages hacks to get around the disadvantages of traditional
-literate programming.
 
 @ The current version of ChezWEB is 2.0 and the current implementation
 is considered to be in an alpha quality state.
@@ -89,166 +93,6 @@ is considered to be in an alpha quality state.
 @p
 (define (display-chezweb-version tangle/weave)
   (printf "This is ~a, ChezWEB Version 2.0 Alpha.~n" tangle/weave))
-
-@* 2 Literate Programming in General.
-Before we move on to \ChezWEB\ proper, no proper uses guide can
-neglect discussing what Literate Programming actually means.  If you
-already know what Literate Programming is, then feel free to move past
-this chapter to the more technical details of \ChezWEB{}.  Otherwise,
-please take some time understanding the principles and motivations of
-Literate Programming; by doing so, you will likely understand ChezWEB
-better, and will make better use of its capabilities.
-
-In some sense, Literate Programming is a way to document
-your programs, but true Literate Programming doesn't just encompass
-the documentation aspects of programming.  Rather Literate Programming
-is an approach both to writing code, as well as to writing
-documentation.  The reader may have already encountered documentation
-systems such as JavaDocs, which permit a sort of hypertext
-documentation to be generated.  Class definitions can be documented
-fairly quickly, and the whole system published in HTML.  One could use
-a Literate Programming system to do this same sort of documentation,
-but doing so misses the main point of Literate Programming.  In a
-system like JavaDocs, the documentation is driven by the code.  That
-is, the documentation and how one writes it centers around the the
-layout, organization, and limitations of the programming language in
-which the program components are written.  Secondly, Literate
-Programming is an extension to normal programming languages.  It
-enables the ability to reorder arbitrary chunks of code and then to
-recompose them into some order.  This lets you write and order the
-program in a manner that the interpreter or compiler for your language
-may not accept.
-
-Put together, Literate Programming is a combination of a documentation
-and programming language, allowing you to restructure the presentation
-of a program in a way that you see fit, rather than forcing you to
-rely on specific conventions of the programming language.  Why is this
-important?  When you write Literate Programs, you don't write them for
-the computer.  Rather, you can look at a Literate Program as an essay
-or a document to be read by humans.  In the same way that a textbook
-of math or a mathematical paper may have formulas and definitions in
-places to provide formal rigor, so the Literate Program uses program
-code to rigorously express what is discussed in the text.  The text
-receives a much greater focus in Literate Programming, and in fact,
-neither documentation nor source code become the dominant feature of a
-good Literate program.  The key is writing your programs in an
-expository fashion, like you would write an essay or manual to be read
-later by the human, rather than the computer.  This document just
-happens to be executable as well as readable.
-
-In essence, Literate Programming systems provide you the means of
-constructing programs in a human readable, rather than computer
-readable fashion, and to optimize them for such display.
-
-Traditional WEB systems accomplish this using two programs, a
-weaving program, and a tangling program.  Each program accepts a
-document constructed of a series of sections, which have code and text
-in them, and organizes them so that either the human or the computer
-can read them easily.  The weave program generally outputs some
-document that can be printed or read on the screen by the human, and
-may include cross-references, links, references, and many other
-things, such as pretty-printing.  The tangle program eliminates the
-parts of the program that the computer doesn't need, namely, the text,
-and ``tangles'' the code chunks into the order that the computer needs
-in order to load the code.
-
-In a traditional Literate Programming system, you specify sections,
-which constitute a collection of text and code chunk.  Sections may
-omit code or text from them, and some systems actually blur the line
-between the end of one section and the start of another.  These code
-chunks usually have names or they may be ``top-level'' chunks that are
-used immediately in the code, and represent the initial starting
-points for tangling the other named chunks.  The named chunks on the
-other hand, will never end up in the tangled code unless they are
-referenced by some other chunk.  When they are referenced, a named
-code chunk takes the code associated with it and inserts it verbatim
-in place of the reference.  In a sense, this is a form of programmatic
-copy and paste.
-
-Of course, as with any suitably powerful tool, you can misuse Literate
-Programming.  Literate Programming should improve the quality of your
-code, not reduce it.  Do not fall into the trap of thinking that just
-because your program was written with a Literate Programming system
-that it represents either good code, or good literate programs.  Keep
-Literate Programming in its rightful place.  It is one of many tools
-that exist to improve the quality of a piece of software.
-
-@* 2 Scheme and Traditional Literate Programming.
-First, let's discuss the Scheme in the context of traditional Literate
-Programming tools. Generally, two sorts of Literate
-Programming systems exist.  These fall under the traditional
-categorization.
-Programs like CWEB and WEB, which Knuth uses, are tightly integrated
-into the programming language around which they work.  They are also
-tied rather directly to the documentation language that they use.
-There are many different special purpose constructs that you use to
-dictate how your program is organized and used.  For example, CWEB has
-a special place in each section for macro definitions.  This isn't
-something you would see in most other languages, because they don't
-have macros in the same sense that C does.  Likewise, there are other
-specific control code used to handle specific things you would only
-want to do in C. While these systems provide you with a really high
-level of integration, they don't port well to other programming
-languages.  Because of this problem, other systems have cropped up
-that don't care what documentation or programming language you use, so
-long as the syntax for either does not conflict with the limited
-syntax of the Literate Programming system.  Noweb is a popular choice
-for this sort of agnostic Literate Programming.  Noweb uses very few
-control codes, and does not pretty printing or language specific
-things out of the box.  You hook into the noweb system in various
-places to enable this sort of feature, but it isn't something that
-most people do.  These systems have a critical advantage to some
-users, in that you can use them with any language.  If you use many
-different languages and want to use the same Literate Programming
-system throughout, or if, perhaps, you do not have a CWEB-like system
-for your particular programming language these sorts of agnostic
-Literate Programming systems make much sense.
-
-Scheme has a few Literate Programming systems or documentation tools
-that work a little like Literate Programming designed specifically for
-it.  SchemeWEB is a way of generating formatted comments next to
-verbatim listings of code.  SLaTeX is another example of a
-documentation system, but it doesn't let you run code.  It's more of a
-listing environment for Scheme code.  Unfortunately, neither of these
-systems is really a full-blown Literate Programming system.  SLaTeX
-doesn't let you run the code you write, and SchemeWEB doesn't allow
-you to reorder your program.  In the Traditional Literate Programming
-world, Scheme has no CWEB analogue.  Thus, using an agnostic Literate
-Programming system is really your only choice if you want to write
-traditional literate programs in Scheme.
-
-I should point out that there are some other systems that do have
-Scheme specific Literate Programming.  A notable example is the
-Scribble/LP system.  It has the advantage of being written in Scheme,
-and as a language in the PLT umbrella, it supports loading and running
-the code directly, without requiring the use of a preprocessor like
-tangle.  However, Scribble is difficult to implement natively without
-a means of extending the reader.  This limits it to implementations
-where the authors of the implementation have added Scribble support,
-or that enable reader extensions by the user.  Still, Scribble/LP is
-one of the best examples of a traditional Literate Programming system
-designed specifically for Scheme.
-
-Now would be a good time to discuss some of the unique results of
-Literate Programming and Scheme.  The most interesting point relates
-to the hygiene of Literate Programming.  You can think of Literate
-Programming as a form of macro language on top of the language the
-system surrounds.  In most other programming languages, only rather
-limited macro systems exist, and almost none are hygienic.
-Traditional Literate Programming is also not hygienic.  When you
-reference a chunk of code somewhere, it really is just like you had
-copied and pasted it directly in there, before loading the program.
-If you define something in one chunk, and then reference that chunk in
-some other, the definitions will get scoped where they were
-referenced, and will capture or shadow any bindings accordingly.
-Scheme macros differ significantly from this model, which preserve
-hygiene by default.  So, if we think of Literate Programming as an
-extra macro system on top of Scheme, do you really want to wrap the
-sophisticated Scheme macro system with a rather na\"\i ve unhygienic
-one?
-
-There is nothing wrong with traditional Literate Programming, but when
-I write in Scheme, I want more.  Thus, I wrote ChezWEB.
 
 @* 2 The ChezWEB System.
 {\it This section is out of date.}
@@ -297,11 +141,9 @@ chezweave program wraps this library to provide a convenient interface
 for generating or ``weaving'' the program into a printable,
 human-readable format.
 
-@* 2 Hygienic Literate Programming.
-
 @* Control Codes Cheat Sheet. This section describes in brief the
 function and syntax of every control code. It does not go into detail,
-but it is meant to be used as a general reference point for users who
+but it is meant to be used as a general reference point for developers who
 are familiar with the overall system, and want an at-a-glance picture of
 the \ChezWEB\ language. 
 
