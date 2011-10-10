@@ -106,6 +106,8 @@ little like programming with CWEB.  However, CWEB is a WEB Literate
 Programming system for the C language, which has a number of
 restrictions that do not exist in Scheme.
 
+$$\includegraphics[width=4in]{chezweb-5.eps}$$
+
 ChezWEB has a number of advantages over using traditional systems.
 For one, if you wanted to write Literate Programs in Scheme, you had
 no option but to use a language agnostic system such as noweb to do

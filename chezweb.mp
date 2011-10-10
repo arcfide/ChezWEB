@@ -142,4 +142,24 @@ beginfig(4);
 	label(btex Chez{\tt TANGLE} etex, (x,y));
 endfig;
 
+beginfig(5);
+	path ob,rtb,rtlb,ssb,wvb,tngb;
+
+	ob := (0in,0in)--(0in,3in)--(6in,3in)--(6in,0in)--cycle;
+	rtb := (0.1in,0.1in)--(0.1in,2.5in)--(2.95in,2.5in)--(2.95in,0.1in)--cycle;
+	ssb := (3.05in,0.1in)--(3.05in,2.5in)--(5.9in,2.5in)--(5.9in,0.1in)--cycle;
+	rtlb := (0.2in,0.2in)--(0.2in,1in)--(2.85in,1in)--(2.85in,0.2in)--cycle;
+	tngb := (3.15in,0.2in)--(3.15in,1in)--(5.8in,1in)--(5.8in,0.2in)--cycle;
+	wvb := (3.15in,1.1in)--(3.15in,2in)--(5.8in,2in)--(5.8in,1.1in)--cycle;
+
+	draw ob; draw rtb; draw ssb; draw rtlb; draw tngb; draw wvb;
+
+	label("chezweb.w", (3in,2.75in));
+	label("runtime.ss", (1.5in,1.75in));
+	label("runtime.sls", (1.5in,0.60in));
+	label("chezweb.ss", (4.5in,2.24in));
+	label("cheztangle.ss", (4.5in,1.55in));
+	label("chezweave.ss", (4.5in,0.60in));
+endfig;
+
 end
