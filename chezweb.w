@@ -29,7 +29,7 @@ PERFORMANCE OF THIS SOFTWARE.
 }
 
 @* Introduction. This document describes the implementation of the
-\ChezWEB\ system of documentation and programming. It is modelled
+\ChezWEB\ system of documentation and programming. It is modeled
 closely after the \WEB\
 %\footnote{Knuth, ``WEB.''}
 and \CWEB\
@@ -76,7 +76,7 @@ While I profess no particular skill in either writing or programming,
 I do profess to enjoy both.  Indeed, this dual enjoyment is a
 necessary condition for good programs, and is especially important in
 Literate Programming, because it exposes your thoughts in two ways.
-This enforced discipline can be embarassing at times, but inevitably
+This enforced discipline can be embarrassing at times, but inevitably
 leads to a better programmer.
 
 \ChezWEB\ is my attempt at bringing the \WEB\ system of documentation
@@ -94,54 +94,39 @@ is considered to be in an alpha quality state.
 (define (display-chezweb-version tangle/weave)
   (printf "This is ~a, ChezWEB Version 2.0 Alpha.~n" tangle/weave))
 
-@* 2 The ChezWEB System.
-{\it This section is out of date.}
-ChezWEB is a literate programming system for the R6RS Scheme language.
-It is implemented using Chez Scheme, but there is no reason it could
-not also be ported to other Scheme implementations as well.  It allows
-you to reorder code and to organize your program into a series of
-sections.  Each of these sections contain documentation or code.  It
-was modelled after the CWEB system, and programming with ChezWEB is a
-little like programming with CWEB.  However, CWEB is a WEB Literate
-Programming system for the C language, which has a number of
-restrictions that do not exist in Scheme.
+@* 2 The ChezWEB System. We divide the \ChezWEB\ system into two primary
+parts: the runtime elements, which are in charge of handling hygienic
+guarantees, and the main program logic, which contains all the code for
+dealing directly with webs. Both of these modules are described in this
+document. Neither the runtime nor the web handling code is particularly
+useful to the end user, so we encapsulate the runtime into a library,
+and we provide access to the weave and tangle functionality of the web
+handling code through two programs {\tt chezweave.ss} and {\tt
+cheztangle.ss}. Thus, we have the following diagram, which illustrates
+the relationship and dependencies of the various files that will be
+produced by tangling this web.
 
 $$\includegraphics[width=4in]{chezweb-5.eps}$$
 
-ChezWEB has a number of advantages over using traditional systems.
-For one, if you wanted to write Literate Programs in Scheme, you had
-no option but to use a language agnostic system such as noweb to do
-so.  While you could hack on noweb's piping shell script model to get
-some amount of Scheme language recognition, doing so might have caused
-you more than a few headaches.  ChezWEB is written in Scheme, and in
-fact, it is implemented as a couple of libraries, one that provides
-documentation support, and the other that provides the language
-support for executing ChezWEB programs.  The forms defined by the
-ChezWEB system are just normal Scheme forms, implemented as macros.
-Thus, you get all the advantages of Scheme when using
-ChezWEB.  ChezWEB understands hygiene and modules and it
-also understands the workflow of most Schemers.
+The runtime system is actually used by the tangle program when tangling
+programs, as {\tt cheztangle} will embed the runtime into the tangled
+code. This means that code produced by \ChezWEB\ is self-contained, and
+does not require any additional libraries. We generate the runtime code
+and library as separate entities specifically because programmers may
+want to use them directly in their programs, outside of the \ChezWEB\
+system. 
 
-Most Schemers do not follow an edit-build-run-debug workflow.  This
-workflow requires an usually annoying and unnecessary build phase
-where you must build your program before you can run and experiment
-with it.  Most Schemers like to program on a REPL, where they can
-interactively define and play with software as they are working.  They
-like to load files in directly after changing them with their editors,
-and maybe copy and paste new elements right into their REPL, without
-even writing them to a file first.  ChezWEB supports this model.  Once
-you enable ChezWEB on your REPL, you can load ChezWEB programs just
-the same way you would have loaded any normal Scheme program, and you
-can also enter ChezWEB code directly on the REPL, and it will get
-evaluated just like normal Scheme, because, it really is just normal
-Scheme.
+We generate a single {\tt chezweb.ss} file for both the weaving and the
+tangling in order to share common code between the two. We could have
+generated a third {\tt common} file, but this actually makes things more
+complicated, and it is easier to just use the same code base for the
+tangle and weave programs. This makes the {\tt cheztangle.ss} and {\tt
+chezweave.ss} programs quite small in themselves, with the bulk of their
+logic and code inside of the {\tt chezweb.ss} file. 
 
-ChezWEB consists of two libraries, and two wrappers on those
-libraries.  The ChezWEAVE library provides support for producing
-documentation from the program.  It outputs \TeX\ code, and the
-chezweave program wraps this library to provide a convenient interface
-for generating or ``weaving'' the program into a printable,
-human-readable format.
+Naturally, if you are working with \ChezWEB{}, you should not be
+developing on the tangled code, but should be working directly from the
+web file. 
 
 @* Control Codes Cheat Sheet. This section describes in brief the
 function and syntax of every control code. It does not go into detail,
