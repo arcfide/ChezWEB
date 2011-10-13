@@ -60,39 +60,39 @@ documented and labeled ``Literate Programming.'' In Professor Knuth's
 vision, a program is not constructed to be read by the machine, but
 rather, to be read as a pleasant book is read, to be read by the
 human.  In this way, one constructs and builds the pieces of a program
-together, as you might build up the necessary elements of Math,
+together, as you might build up the necessary elements of math,
 surrounding them with exposition, and ordering them in the manner that
 best reveals the program's working and meaning to the reader.
 
 This somewhat radical approach to programming leads to a drastically
 different perspective on how to write programs.  Indeed, I feel that
-writing my programs using Literate Programming has greatly improved my
+writing my programs in a literate style has greatly improved my
 ability to maintain and improve these same programs, and moreover, to
 understand these programs as I am writing them.  I enjoy writing and
 seeing the results of my writing, both in a printed or screen-readable
 form, as well as in a machine executable form.
 
 While I profess no particular skill in either writing or programming,
-I do profess to enjoy both.  Indeed, this dual enjoyment is a
+I do profess to enjoy both. This dual enjoyment is a
 necessary condition for good programs, and is especially important in
-Literate Programming, because it exposes your thoughts in two ways.
+literate programming, because it exposes your thoughts in two ways.
 This enforced discipline can be embarrassing at times, but inevitably
 leads to a better programmer.
 
 \ChezWEB\ is my attempt at bringing the \WEB\ system of documentation
-to the Schemer's world, to improve its usability, and the reliability
+to the Schemer's world, to improve its usability and the reliability
 of code that is written in a literate style. It is far from perfect,
 but I hope that those who use it find it both appealing and efficient
 for delivering programs of higher quality, that others can read and
 understand more easily, and that can stand the rigors of many eyes and
 fingers working over the document.
 
-@ The current version of ChezWEB is 2.0 and the current implementation
-is considered to be in an alpha quality state.
+@ The current version of \ChezWEB\ is 2.0 and the current implementation
+is considered $\beta$-quality.
 
 @p
 (define (display-chezweb-version tangle/weave)
-  (printf "This is ~a, ChezWEB Version 2.0 Alpha.~n" tangle/weave))
+  (printf "This is ~a, ChezWEB Version 2.0 Beta.~n" tangle/weave))
 
 @* 2 The ChezWEB System. We divide the \ChezWEB\ system into two primary
 parts: the runtime elements, which are in charge of handling hygienic
@@ -113,8 +113,7 @@ programs, as {\tt cheztangle} will embed the runtime into the tangled
 code. This means that code produced by \ChezWEB\ is self-contained, and
 does not require any additional libraries. We generate the runtime code
 and library as separate entities specifically because programmers may
-want to use them directly in their programs, outside of the \ChezWEB\
-system. 
+want to use them directly in their programs, outside of \ChezWEB{}.
 
 We generate a single {\tt chezweb.ss} file for both the weaving and the
 tangling in order to share common code between the two. We could have
@@ -150,9 +149,9 @@ that section.
 \item{\.{@@q}} A comment, only shows in source.
 \item{\.{@@i}} Include the contents of another file.
 \item{\.{@@\^}} Index an entry in roman type.
-\item{\.{@@:}} Index an entry using \.{\9}, default is |@:blah}{code@>|
+\item{\.{@@:}} Index an entry using $\.{\\9}$, default is |@@:blah}{code@@>|
 which typesets |blah| as |code| in the index.
-\item{\.{@@.}} Index an entry in typewriter type.
+\item{\.{@@.}} Index an entry in $\.{typewriter}$ type.
 \par}
 
 @* The ChezWEB Runtime. Normal \CWEB\ programs do not have any
@@ -180,7 +179,7 @@ stated casually as follows:
 {\bf Hygiene.}
 Any definition introduced in the body of the chunk that is not
 explicitly exported by the export and captures clauses is visible only
-within the scope of the chunk, and is not visible to any surround
+within the scope of the chunk, and is not visible to any surrounding
 context that references the chunk.
 
 \smallskip\noindent{\bf Referential Transparency.}
@@ -214,7 +213,7 @@ in the chunk body, but these are really the only references that are
 likely to be resolvable unless one explicitly captures them through
 means of the capture facility.
 
-The macro itself takes the following syntax:
+@ The macro itself takes the following syntax:
 
 \medskip\verbatim
 (@@< (name capture ...) body+ ...)
@@ -269,11 +268,11 @@ location.
 (define-syntax (build-value-form x)
   (syntax-case x ()
     [(_ id (ic ...) body ...)
-     (with-syntax
-         ([(oc ...) (datum->syntax #'id (syntax->datum #'(ic ...)))])
+     (with-syntax ([(oc ...) (datum->syntax #'id (syntax->datum #'(ic ...)))])
        #'(let () (alias ic oc) ... body ...))]))
 
-@ This form is used as a part of the |value-form| macro, which is what
+@ The |build-value-form| syntax 
+is used as a part of the |value-form| macro, which is what
 does the initial definition of the macro for |name|. The |name| macro
 is just an identifier syntax that has clauses for the single
 identifier use and the macro call, but nothing for the |set!| clause,
@@ -294,8 +293,8 @@ problem.  Take the following body as an example:
 (a a b c)
 !endverbatim \medskip
 
-\noindent This seems like it should be fine, and we expect that if we
-use something like the following:
+\noindent This seems like it should be fine, but consider what happens
+if we do the following:
 
 \medskip\verbatim
 (@@< (|List of a, b, and c|)
@@ -305,18 +304,18 @@ use something like the following:
   (a a b c))
 !endverbatim \medskip
 
-\noindent We might end up in some trouble. When run |value-form| on it,
+\noindent We might end up in some trouble. When |value-form| runs on it,
 we will get something like this:
 
 \medskip\verbatim
 (define-syntax (|List of a, b, and c| x)
   (syntax-case x ()
     [id (identifier? #'id)
-     #'(build-value-form #'id #'()
-       #'((define-syntax a
+     #'(build-value-form id ()
+         ((define-syntax a
             (syntax-rules ()
               [(_ e ...) (list 'e ...)]))
-               (a a b c)))]))
+          (a a b c)))]))
 !endverbatim \medskip
 
 \noindent Obviously, the above syntax doesn't work, because there is
@@ -339,7 +338,7 @@ ellipses, so we would expand the two body forms |(define...)| and
              . rest)]))]))
 
 @ When we work with the definition form, we want to use a similar
-linking technique as above. However, in this case, we need to link
+aliasing technique as above. However, in this case, we need to link
 both exports and captures. Furthermore, we need to expand into a
 |module| form instead of using a |let| form as we do above.
 
@@ -359,15 +358,14 @@ the surrounding context (outer).
 (define-syntax (build-module-form x)
   (syntax-case x ()
     [(_ id (ic ...) (ie ...) body ...)
-     (with-syntax 
-         ([(oc ...) (datum->syntax #'id (syntax->datum #'(ic ...)))]
-          [(oe ...) (datum->syntax #'id (syntax->datum #'(ie ...)))])
+     (with-syntax ([(oc ...) (datum->syntax #'id (syntax->datum #'(ic ...)))]
+                   [(oe ...) (datum->syntax #'id (syntax->datum #'(ie ...)))])
        #'(module (oe ...)
            (alias ic oc) ...
            (module (ie ...) body ...)
            (alias oe ie) ...))]))
 
-@ And just as we did above for the |value-form| macro, 
+@ And just as we did for the |value-form| macro, 
 we implement the |module-form| macro in the same way, 
 taking care to escape the body elements.
 Unlike the value form of our call, though, we never expect to have the
@@ -395,8 +393,8 @@ the indirect exports for the |@@<| macro.
 )
 
 @* 2 The Runtime Library. For users who wish to use this runtime in
-their own code, we will provide a simple library for them to load the
-runtime code themselves. This will enable them to use the macro as
+their own code, we provide a simple library for them to load the
+runtime code themselves. This enables them to use the macro as
 their own abstraction and have the chunk like reordering without
 actually requiring them to write their entire program in \ChezWEB{}.
 
@@ -438,8 +436,8 @@ is discussed further down.
         @<Finish tokenizing and return token list@>
         (let ([c (read-char (car ports))])
           (cond
-           [(eof-object? c) @<Finish tokenizing port and loop@>]
-           [(char=? #\@@ c) @<Parse possible control code and loop@>]
+           [(eof-object? c) @<Finish tokenizing port and |loop|@>]
+           [(char=? #\@@ c) @<Parse possible control code and |loop|@>]
            [else (loop tokens (cons c cur) ports)])))))
 
 @ When we run out of ports to process, we want to handle any left over
@@ -468,7 +466,7 @@ the string starting with the line after the include to be its own
 distinct token element, and not be merged with any previous tokens.
 
 @c (loop tokens cur ports)
-@<Finish tokenizing port and loop@>=
+@<Finish tokenizing port and |loop|@>=
 (if (null? cur)
     (loop tokens cur (cdr ports))
     (loop (cons (list->string (reverse cur)) tokens)
@@ -486,7 +484,7 @@ to our tokens list, and then add our symbolic token to the list of
 tokens as well. The list of tokens is accumulated in reverse order.
 
 @c (c cur tokens loop ports)
-@<Parse possible control code and loop@>=
+@<Parse possible control code and |loop|@>=
 (let ([nc (read-char (car ports))])
   (case nc
     [(#\@@) (loop tokens (cons c cur) ports)]
