@@ -405,29 +405,31 @@ actually requiring them to write their entire program in \ChezWEB{}.
   (import (chezscheme))
   (include "runtime.ss"))
 
-@* Tokenizing WEB files. If one writes a \ChezWEB\ file in the \WEB\
-syntax, we need to parse it into tokens representing either control
-codes or text between control codes. We do this by implementing
-|chezweb-tokenize|, which takes a port and returns a list of tokens.
+@* Tokenizing WEB files. 
+\ChezWEB\ programs written in the \WEB\ syntax are all treated as 
+a single stream of tokens. This token stream can be obtained by using
+the |chezweb-tokenize| procedure, whose signature is as follows.
 
-$$\.{chezweb-tokenize} : port \to \\{token-list}$$
+$$\.{chezweb-tokenize} : \\{port}\to\\{token-list}$$
 
-\noindent Fortunately, each and every token can be identified by
-reading usually only three characters.  Each control code begins with
-an ampersand; most are only two characters, though the |@@>=| form has
-more.  This makes it fairly straightforward to build a tokenizer
-directly. We do this without much abstraction below.
+\noindent Each token is either a string or a symbol representing one of
+the \ChezWEB\ control codes. Control codes in the text can be
+identified by reading at most three characters.
+Each control code begins with an ampersand; 
+most are only two characters, though the |@@>=| form has more.
+This makes it fairly straightforward to build a
+tokenizer directly. We do this without much abstraction below.
 
 We have the following parameters in our main loop:
 
 \medskip{\parindent = 0.75in
-\item{|tokens|} The reversed list of accumulated tokens so far.
-\item{|cur|} A character list buffer for accumulated string tokens.
-\item{|ports|} The set of file ports to read from, in order.\par}
+\item{|tokens|} The reversed list of accumulated tokens so far
+\item{|cur|} A character list buffer for accumulated string tokens
+\item{|ports|} The set of file ports to read from, in order\par}
 \medskip
 
-\noindent I use the |ports| list because of the |@@i| control code which
-is discussed further down.
+\noindent I use the |ports| list because of the |@@i| control code
+discussed further down.
 
 @p
 (define (chezweb-tokenize port)
@@ -460,10 +462,12 @@ do something like this:
 kdkdkdksljklsdl
 !endverbatim \medskip
 
-\noindent In the above, presumably the {\tt blah.w} file will end in
-some string and then you can continue processing from there. You want
-the string starting with the line after the include to be its own
-distinct token element, and not be merged with any previous tokens.
+\noindent You want the string starting with the line after the include
+to be the start of a distinct token element,
+and not be merged with any previous tokens.
+Thus, the above should be an error because it begins a string of 
+text or code without first delimiting it with a control code of some
+sort.
 
 @c (loop tokens cur ports)
 @<Finish tokenizing port and |loop|@>=
@@ -474,8 +478,8 @@ distinct token element, and not be merged with any previous tokens.
           (cdr ports)))
 
 @ Most of the control codes can be determined by reading ahead only
-one more character, but there is one that requires reading two more
-characters. Additionally, there is an escape control code
+one more character, but dealing with |@@>=| requires two character
+lookaheads. Additionally, there is an escape control code
 (|@@@@|) that let's us escape out the ampersand if we really want to
 put a literal two characters into our text rather than to use a
 control code. If we do find a token, we want that token to be encoded
@@ -490,9 +494,9 @@ tokens as well. The list of tokens is accumulated in reverse order.
     [(#\@@) (loop tokens (cons c cur) ports)]
     [(#\q) (get-line (car ports)) (loop tokens cur ports)]
     [(#\space #\< #\p #\* #\e #\r #\( #\^ #\. #\: #\c) ;)
-     @<Add buffer and control code to token list and loop@>]
-    [(#\>) @<Parse possible |@@>=| delimiter and loop@>]
-    [(#\i) @<Include new file in ports list and loop@>]
+     @<Add buffer and control code to |tokens| and |loop|@>]
+    [(#\>) @<Parse possible |@@>=| delimiter and |loop|@>]
+    [(#\i) @<Include new file in |ports| and |loop|@>]
     [else
       (if (eof-object? nc)
           (loop tokens cur ports)
@@ -500,19 +504,19 @@ tokens as well. The list of tokens is accumulated in reverse order.
 
 @ For the control codes that don't require any additional parsing, we
 can simply add the |cur| buffer if it is non-empty and then add the
-contorl code to the list of tokens.
+control code to the list of tokens.
 
 @c (c nc cur tokens loop ports)
-@<Add buffer and control code to token list and loop@>=
+@<Add buffer and control code to |tokens| and |loop|@>=
 (let ([token (string->symbol (string c nc))])
   (if (null? cur)
       (loop (cons token tokens) '() ports)
       (loop (cons* token (list->string (reverse cur)) tokens)
             '() ports)))
 
-@ When we encounter and include directive/code, we want to splice in the
+@ When we encounter an include directive, we want to splice in the
 content from the file as its own set of sections. We do this by adding
-the file's port to the queue of |ports|. However, to maintain the
+the file's port at the head of |ports|. However, to maintain the
 boundaries of sections, we also need to clear out things like the |cur|
 buffer when we do this. We expect that the line of the include code
 should contain a Scheme string that contains the path to the file. We
@@ -522,21 +526,21 @@ whitespace and other nonesense at the beginning and end of them, and so
 forth. 
 
 @c (loop ports cur tokens) 
-@<Include new file in ports list and loop@>=
-(loop (if (null? cur)
-          tokens
-          (cons (list->string (reverse cur)) tokens))
-      '()
-      (cons (open-input-file 
-             (with-input-from-string (get-line (car ports)) 
-                                     read))
-            ports))
+@<Include new file in |ports| and |loop|@>=
+(let ([fname (with-input-from-string (get-line (car ports)) read)])
+  (unless (string? fname)
+    (error #f "expected string file name" fname))
+  (loop (if (pair? cur)
+            (cons (list->string (reverse cur)) tokens)
+            tokens)
+        '()
+        (cons fname ports)))
 
 @ When we encounter the sequence |@@>| in our system, we may have a
 closing delimiter, but we won't know that until we read ahead a bit
 more.  When we do have a closing delimiter, we will ignore all of the
 characters after that on the line. In essence, this is like having an
-implicit |@@q| character sitting around. We do this in order to
+implicit |@@q| code sitting around. We do this in order to
 provide a clean slate to the user when writing files, so that
 extraneous whitespace is not inserted into a file if the programmer
 does not intend it.  Extraneous whitespace at the beginning of a file
@@ -548,7 +552,7 @@ will treat it like a normal |@@>| code, which is a code which
 does not strip the rest of the line's contents.
 
 @c (cur loop tokens c nc ports)
-@<Parse possible |@@>=| delimiter and loop@>=
+@<Parse possible |@@>=| delimiter and |loop|@>=
 (define (extend tok ncur)
   (if (null? cur)
       (loop (cons tok tokens) ncur ports)
