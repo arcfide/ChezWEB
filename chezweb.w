@@ -574,17 +574,25 @@ for both tangling and weaving. As such, we'll document the basic
 logic here, and you can read about the special representations
 in the appropriate section below.
 
-The |slurp-code| procedure takes three arguments, a list of
-tokens whose head should be the start of a code body, a
-procedure |encode| that, when given a string representing a
-chunk name, will encode that string into another string, suitable
-for use as part of the code body of either tangled or woven code,
-and finally, a cleaner for any string content that is encountered.
+$$\.{slurp-code} : \\{tokens}\times\\{encode}\times\\{clean}
+\to\\{tokens-rest}\times\\{code-body-string}$$
+
+\noindent The |slurp-code| procedure takes three arguments:
+
+\medskip{\parindent=1.0in
+\item{|tokens|} A list whose head should be the start of a code body;
+\item{|encode|} A procedure that, when given a string representing a 
+chunk name, will encode that string into another string, suitable for
+use as part of the code body of either tangled or woven code;
+\item{|clean|} Finally, a cleaning procedure that will sanitize a 
+string for output.\par}\medskip
+
+\noindent
 The use of a cleaner allows the slurper to be used for both tangling 
 and weaving. Specifically, if we tangle code, we don't want to 
 prepare it for \TeX{}ing. On the other hand, if we are weaving the 
 code, we need to remember to do things to it to make it nicer for the 
-\TeX environments. 
+\TeX\ environments. 
 The |slurp-code| procedure will return two values, one being the
 pointer to the rest of the tokens after the body has been processed,
 and the other, the code body itself as a single string.
@@ -621,17 +629,17 @@ our attempts at pretty printing.
     (error #f "empty chunk body" x))
   (strip-whitespace x))
 
-@ The syntax for a chunk reference is an open and closer delimiting a
-chunk name string:
+@ The syntax for a chunk reference is a chunk name string surrounded
+by an opening |@@<| and a closing |@@>|.
 
 \medskip\verbatim
 @@<chunk name@@>
 !endverbatim \medskip
 
 \noindent The name of the chunk is the contents between the
-delimiters with the whitespace removed. We can verify this
-basically with a simple set of tests. This isn't a fully thorough
-test but it should do the job.
+delimiters with the leading and trailing whitespace removed.
+We can verify this with a simple set of tests.
+This isn't a fully thorough test but it should do the job.
 
 @c (tokens)       
 @<Verify chunk reference syntax@>=
