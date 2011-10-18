@@ -651,34 +651,39 @@ This isn't a fully thorough test but it should do the job.
   (error #f "expected chunk closer" (list-head tokens 3)))
        
 @* Tangling a WEB. Tangling is the process of taking a \WEB\ and
-converting it to a Scheme file. In the current implementation, this code
-should run self contained on its own, without the need of any other
-files.
+converting it to a Scheme file. In the current implementation, 
+the tangled code should run self contained on its own, 
+without the need of any other files.
 
 $$\includegraphics[width=3in]{chezweb-4.eps}$$
 
-Once we have this list of tokens, we can in turn
+\noindent Once we have this list of tokens, we can in turn
 write a simple program to tangle the output. Tangling actually
 consists of several steps.
 
 \medskip{\parindent = 2em
 \item{1.}
-Accumulate named chunks
+Accumulate named chunks;
 \item{2.}
-Gather file code and |@@p| code for output
+Gather file code and |@@p| code for output;
 \item{3.}
-Prepend runtime to files
-\item{4.}
-Prepend named chunk definitions to those files that use those chunks
+Output each named file and the default file,
+making sure to prepend the runtime, followed by the chunk definitions
+to the default file.
 \par}\medskip
 
 \noindent For example, if we have not used the |@@(| control code,
-which allows us to send data to one or more files, then we will send
-all of our data to the default file. This means that we need to walk
-through the code used in all of the |@@p| control codes to find which
-named chunks are referenced in the program code. We then take these
-definitions and prepend them with the runtime to the appropriate file
-name before finally tacking on the code for the file.
+which allows us to send data to extra files, then we will send
+all of our data to the default file. 
+For the default file, the user can put references to named chunks
+inside of the top level code. To accomadate this, we need to embed 
+the runtime code at the top of the default file, followed by all of 
+the named code definitions. We can follow both of these by the main
+top level definitions of the program. Note that we do not allow 
+named chunk/section references inside of sections output to other 
+files; that is, we do not allow you to put a reference to a named 
+section inside of a section that was started with the |@@(| control
+code. 
 
 The first step is to actually grab our runtime, which we will do when
 we compile the program:
@@ -752,29 +757,25 @@ $$\vbox{
 \noindent We use hashtables for each table, but these hashtables are
 only meant for internal use, and should never see the light of the
 outside userspace. The only other gotcha to remember is that the
-tokens list will return a string first only if there is something in
-the limbo area of the file. If there is nothing in limbo, there will
-be a token first.  We want to loop arround assuming that we receive a
+tokens list will contain a string as the first element only if there
+is something in the limbo area of the file.
+If there is nothing in limbo, there will be a token first.
+We want to loop around assuming that we receive a
 token before any string input, and we don't care about limbo when we
 tangle a file, so when we seed the loop, we will take care to remove
 the initial limbo string if there is any.
 
-@p
-(define (construct-chunk-tables token-list)
-  (let 
-      ([named (make-eq-hashtable)]
-       [top-level (make-hashtable equal-hash equal?)]
-       [captures (make-eq-hashtable)])
-    (let loop 
-        ([tokens 
-           (if (string? (car token-list)) 
-               (cdr token-list)
-               token-list)] 
-         [current-captures '()]
-         [current-exports #f])
-      (if (null? tokens)
-          (values top-level named captures)
-          @<Dispatch on control code@>))))
+@c (tokens)
+@<Construct chunk tables |named|, |top-level|, and |captures|@>=
+(let ([named (make-eq-hashtable)]
+      [top-level (make-hashtable equal-hash equal?)]
+      [captures (make-eq-hashtable)])
+  (let loop ([tokens (if (string? (car tokens)) (cdr tokens) tokens)] 
+             [current-captures '()]
+             [current-exports #f])
+    (if (null? tokens)
+        (values top-level named captures)
+        @<Dispatch on control code@>)))
 
 @ On each step of the loop, we will expect to have a single control
 code at the head of the |tokens| list.  Each time we iterate through
@@ -787,18 +788,17 @@ encounter a control code at the head of the list.
 @<Dispatch on control code@>=
 (case (car tokens)
   [(|@@ | @@* @@e @@r @@^ @@. @@: @@i) (loop (cddr tokens) '() #f)]
-  [(@@p) @<Extend default top-level@>]
-  [(@@<) @<Extend named chunk@>]
-  [(|@@(|) @<Extend file top-level@>]
-  [(@@c) @<Update the current captures@>]
-  [else
-    (error #f "Unexpected token" (car tokens) (cadr tokens))])
+  [(@@p) @<Extend default top-level and |loop|@>]
+  [(@@<) @<Extend named chunk and |loop|@>]
+  [(|@@(|) @<Extend file top-level and |loop|@>]
+  [(@@c) @<Update the current captures and |loop|@>]
+  [else (error #f "Unexpected token" (car tokens) (cadr tokens))])
 
 @ Extending the default top level is the easiest. We just append the
 string that we find to the |*default*| key in the |top-level| table.
 
 @c (loop tokens top-level)
-@<Extend default top-level@>=
+@<Extend default top-level and |loop|@>=
 (define-values (ntkns body) 
   (slurp-code (cdr tokens) tangle-encode (lambda (x) x)))
 (hashtable-update! top-level '*default*
@@ -808,7 +808,7 @@ string that we find to the |*default*| key in the |top-level| table.
 
 @ I'd like to take a moment here to discuss what |tangle-encode| is. Our
 |slurp-code| procedure, which is defined elsewhere, takes an encoder,
-which will expect to give it a string for encoding a chunk reference
+which will expect it to receive a string for encoding a chunk reference
 name. The job of the encoder is to make sure that the string that it
 returns is something that belongs as valid code. For weaving, this is a
 form of \TeX{}ififcation, while with tangling, it's turning that name
@@ -828,7 +828,7 @@ should remember to strip off the leading and trailing whitespace from
 the name in question.
 
 @c (loop tokens top-level)
-@<Extend file top-level@>=
+@<Extend file top-level and |loop|@>=
 @<Verify and extract delimited chunk@>
 (let ([name (strip-whitespace name)])
   (hashtable-update! top-level name
@@ -844,7 +844,10 @@ as soon as we encounter them so that they can be used in the next
 chunk. We reset the captures if we do not find a named chunk as our
 next section.
 
-The format of a captures form looks something like this:
+$$\.{parse-captures-line} : \\{captures-string}
+\to\\{captures}\times\\{maybe-exports}$$
+
+\noindent The format of a captures form looks something like this:
 
 \medskip\verbatim
 @@c (c ...) [=> (e ...)]
@@ -877,7 +880,7 @@ then the second value will be false.
 updating in our loop.
 
 @c (loop tokens)
-@<Update the current captures@>=
+@<Update the current captures and |loop|@>=
 (unless (string? (cadr tokens))
   (error #f "Expected captures line" (cadr tokens)))
 (let-values ([(captures exports) (parse-captures-line (cadr tokens))])
@@ -911,7 +914,7 @@ programmer can extend the chunks. So, for example:
 captures list of |a b t| and the exports list to be |x y z u v|. 
 
 @c (loop tokens named current-captures current-exports captures)
-@<Extend named chunk@>=
+@<Extend named chunk and |loop|@>=
 @<Verify and extract delimited chunk@>
 (let ([name (string->symbol (strip-whitespace name))])
   (hashtable-update! named name
@@ -981,12 +984,12 @@ later referred to as |name| and |body| rather than as |car|s and
                                 (lambda (x) x))])
         (values name body ntkns)))))
 
-@ We also want to define out own procedure to strip the whitespace
+@ We also want to define our own procedure to strip the whitespace
 from our strings. We could have used something from the SRFIs, such as
 the strip function from SRFI 13, but we will write our own, simplified
 version here to keep things easy and also to avoid unnecessary
-dependencies on the code, which should, to the best extent possible,
-be self-contained. Our basic technique is to take the string, and walk
+dependencies.
+Our basic technique is to take the string, and walk
 down the ends from the right and the left to determine where the first
 non-whitespace character occurs in each direction.
 
@@ -1047,10 +1050,6 @@ text, and this makes such an use invalid even within the tangled
 default top-level. Thus, we haven't really made the system any 
 less usable for such things than it already was.
 
-{\it In the future it might be nice to have the functionality 
-of unhygienic textual copy and paste, but such functionality is 
-for another time and place.}
-
 As a final note, we should remember to use the right mode for 
 our tangled file. 
 Since any tangled file is relying on Chez Scheme features, 
@@ -1097,14 +1096,14 @@ definable in any order.
 
 @c (captures named-chunks output-port)
 @<Write named chunks to file@>=
-(for-each
-  (lambda (name)
-    (let ([cell (hashtable-ref captures name '(() . #f))])
-      (format output-port
-        "(@@< (~s ~{~s ~}) ~@@[=> (~{~s ~})~]~n~a~n)~n~n"
-        name (car cell) (cdr cell)
-        (hashtable-ref named-chunks name ""))))
-  (vector->list (hashtable-keys named-chunks)))
+(let-values ([(keys vals) (hashtable-entries named-chunks)])
+  (vector-for-each
+    (lambda (name code)
+      (let ([cell (hashtable-ref captures name '(() . #f))])
+        (format output-port
+          "(@@< (~s ~{~s ~}) ~@@[=> (~{~s ~})~]~n~a~n)~n~n"
+          name (car cell) (cdr cell) code)))
+    keys vals))
 
 @ Now all of the pieces are in place to write the |tangle-file|
 procedure that we talked about previously. We want to be
@@ -1121,7 +1120,7 @@ forms, or the like.
           (cleanse-tokens-for-tangle
             (call-with-input-file web-file chezweb-tokenize))])
     (let-values ([(top-level-chunks named-chunks captures)
-                  (construct-chunk-tables tokens)])
+                  @<Construct chunk tables |named|, |top-level|, and |captures|@>])
       (for-each
         (lambda (file)
           (let ([output-file (if (eq? '*default* file)
