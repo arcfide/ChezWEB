@@ -1209,9 +1209,10 @@ Let's examine the top-level loop that iterates over the tokens.
         (write-index file (call-with-input-file file chezweb-tokenize)))
       (define sections (index-sections file tokens))
       @<Define weave chunk reference encoder@>
-      (printf "Weaving ~a~n" file)
+      (printf "Weaving ~a..." file)
       (format port "\\input chezwebmac~n~n")
       @<Weave sections@>
+      (printf "~n")
       (format port "\\inx~n\\fin~n\\con~n"))
     'replace))
 
@@ -1276,12 +1277,12 @@ after it.
 
 @c (port tokens sectnum encode sections)
 @<Process a normal section@>=
-(define body
+(define-values (body has-body?)
   (let ([maybe (cadr tokens)])
-    (unless (string? maybe)
-      (error #f "Section contains no body." (list-head tokens 2)))
-    maybe))
-(format port "\\M{~a}~a~n" sectnum (texify-section-text body))
+    (if (string? maybe) 
+        (values maybe #t)
+        (values "" #f))))
+(format port "\\M{~a}~a" sectnum (texify-section-text body))
 (let ([leftover @<Weave optional code chunk@>])
   (format port "\\fi~n~n")
   leftover)
@@ -1292,8 +1293,10 @@ section.
 
 @c (port tokens sectnum encode sections)
 @<Process a starred section@>=
+(define has-body? #t)
 (define-values (depth body)
   @<Scrape depth and body from starred section@>)
+(printf "*~a" sectnum)
 (format port "\\N{~a}{~a}~a~n"
   depth sectnum (texify-section-text body))
 (let ([leftover @<Weave optional code chunk@>])
@@ -1348,14 +1351,15 @@ We may at first discover a program chunk for the top-level. We may
 have a named chunk without a captures and exports list, and we may
 finally have a case where the captures list is given. 
 
-@c (tokens port sectnum encode sections)
+@c (tokens port sectnum encode sections has-body?)
 @<Weave optional code chunk@>=
-(let ([txttkns (cddr tokens)])
+(let ([txttkns ((if has-body? cddr cdr) tokens)])
   (cond
     [(null? txttkns) '()]
     [(not (symbol? (car txttkns)))
      (error #f "expected control code" (car txttkns))]
     [else
+      @<Print spacer if we have a text body@>
       (case (car txttkns)
         [(@@p) @<Weave program chunk@>]
         [(@@<)
@@ -1367,6 +1371,19 @@ finally have a case where the captures list is given.
         [else
           (error #f "unrecognized code" (car txttkns))])]))
 
+@ In each of the following possibilities for weaving code, 
+we will need to put vertical space between the text body 
+and the code part of a section if there is a text body. 
+On the other hand, if there is no text body, then we do not 
+want to put that space, and we want to start the code body 
+immediately instead. We do this here so that this operation 
+is not scattered throughout the rest of the code.
+
+@c (port txttkns has-body?)
+@<Print spacer if we have a text body@>=
+(when (memq (car txttkns) '(@@p @@< @@c @@|(|)) ;)
+  (format port "~n~@[\\Y~]" has-body?))
+
 @ Weaving a program chunk is by far the easiest of the options.
 The basic format for doing a top-level piece of program code is to
 print the space and then move directly into code mode before printing
@@ -1376,7 +1393,7 @@ complete the section.
 @c (port txttkns sectnum encode)
 @<Weave program chunk@>=
 (let-values ([(rest body) (slurp-code (cdr txttkns) encode texify-code)])
-  (format port "\\Y\\B ~a \\par~n" (chezweb-pretty-print body))
+  (format port "\\B ~a \\par~n" (chezweb-pretty-print body))
   rest)
 
 @ If we encounter a captures code, this means that we should expect
@@ -1400,7 +1417,7 @@ worry about the global captures like we do in tangling. Otherwise,
 formatting follows a slightly more complicated template:
 
 \medskip\verbatim
-\Y\B\4\X<sectnum>:<name>\X${}\E{}$\6
+\B\4\X<sectnum>:<name>\X${}\E{}$\6
 <code>\par<cap_exps><cross_refs>\fi
 !endverbatim \medskip
 
@@ -1417,7 +1434,7 @@ sign before the equivalence sign above.
 @p
 (define (print-named-chunk port texify name code sectnum caps exps sections)
   (format port
-    "\\Y\\B\\4\\X~a:~a\\X${}~@[~a~]\\E{}$\\6~n~a\\par~n~?~?~@[~?~]"
+    "\\B\\4\\X~a:~a\\X${}~@[~a~]\\E{}$\\6~n~a\\par~n~?~?~@[~?~]"
     sectnum (texify name)
     (and (not (weave-sec-def? sections name sectnum)) "\\mathrel+")
     (chezweb-pretty-print code)
@@ -1769,9 +1786,9 @@ where that chunk name is defined, and where the chunk is referenced.
     (let loop ([tokens tokens] [sectnum 0])
       (when (pair? tokens)
         (case (car tokens)
-	  [(@@*) 
-	   (printf "*~a" (1+ sectnum))
-	   (loop (cdr tokens) (1+ sectnum))]
+          [(@@*) 
+           (printf "*~a" (1+ sectnum))
+           (loop (cdr tokens) (1+ sectnum))]
           [(|@@ |) (loop (cdr tokens) (1+ sectnum))]
           [(@@< |@@(|) @<Process named chunk@>] ;)
           [else (loop (cdr tokens) sectnum)])))
