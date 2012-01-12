@@ -1764,15 +1764,19 @@ where that chunk name is defined, and where the chunk is referenced.
 
 @p
 (define (index-sections file tokens)
-  (printf "Writing section index...~n")
+  (printf "Writing section index...")
   (let ([sections (make-hashtable string-hash string=?)])
     (let loop ([tokens tokens] [sectnum 0])
       (when (pair? tokens)
         (case (car tokens)
-          [(|@@ | @@*) (loop (cdr tokens) (1+ sectnum))]
+	  [(@@*) 
+	   (printf "*~a" (1+ sectnum))
+	   (loop (cdr tokens) (1+ sectnum))]
+          [(|@@ |) (loop (cdr tokens) (1+ sectnum))]
           [(@@< |@@(|) @<Process named chunk@>] ;)
           [else (loop (cdr tokens) sectnum)])))
     @<Write sections index@>
+    (printf "~n")
     sections))
 
 @ We have three main pieces of information that we want to keep around
