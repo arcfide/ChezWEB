@@ -1439,9 +1439,9 @@ sign before the equivalence sign above.
     sectnum (texify name)
     (and (not (weave-sec-def? sections name sectnum)) "\\mathrel+")
     (chezweb-pretty-print code)
-    "~@[\\CAP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~]"
+    "~@[\\CAP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~n~]"
     (list (and (not (null? clean-caps)) clean-caps))
-    "~@[\\EXP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~]"
+    "~@[\\EXP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~n~]"
     (list clean-exps)
     (and (weave-sec-def? sections name sectnum) "~@[~a~]~@[~a~]")
     (list (weave-sec-defs sections name) (weave-sec-refs sections name))))
@@ -1450,13 +1450,23 @@ sign before the equivalence sign above.
 to be used directly in \TeX\ code. However, when special characters like
 |%| and |$| appear, this requires some intervention. Before we print any
 captures to our \TeX\ file, we need to make sure that they are cleaned up
-and we do this by wrapping each identifier in |\smvrb <id>!endverbatim|,
+and we do this by wrapping each identifier in vertical bars,
 which will escape out to a smaller font version of the main verbatim mode.
 
 @c (caps exps) => (clean-caps clean-exps)
 @<Clean the captures and exports@>=
 (define (clean id) 
-  (format "\\smvrb ~a|" id))
+  (let loop ([res '()] [clst (string->list (symbol->string id))])
+    (cond
+      [(null? clst) 
+       (format "{\\smtt ~a}" (list->string (reverse res)))]
+      [(char=? #\% (car clst)) 
+       (loop (cons* #\% #\\ res) (cdr clst))]
+      [(char=? #\$ (car clst))
+       (loop (cons* #\$ #\\ res) (cdr clst))]
+      [(char=? #\& (car clst))
+       (loop (cons* #\& #\\ res) (cdr clst))]
+      [else (loop (cons (car clst) res) (cdr clst))])))
 (define clean-caps (and caps (map clean caps)))
 (define clean-exps (and exps (map clean exps)))
 

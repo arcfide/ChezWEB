@@ -121,7 +121,9 @@
 \let\yskip=\smallskip
 \def\?{\mathrel?}
 \def\note#1#2.{\Y\noindent{\hangindent2em%
-    \baselineskip10pt\eightrm#1~\ifacro{\pdfnote#2.}\else#2\fi.\par}}
+    \baselineskip10pt\eightrm#1~\ifacro%
+    \everyverbatim={\smtt}%
+    {\pdfnote#2.}\else#2\fi.\par}}
 
 \newtoks\toksA \newtoks\toksB \newtoks\toksC \newtoks\toksD
 \newtoks\toksE \newtoks\toksF \newtoks\usersanitizer
@@ -546,6 +548,14 @@
    \leftline{\sc\today\ at \hours}}} % timestamps the contents page
 
 %%%%
+%% Some macros that are special for ChezWEB
+
+\font\smtt=cmtt8
+
+\def\CAP{\note{This section captures}}% For the captures line.
+\def\EXP{\note{This section exports}}% For the exports line.
+
+%%%%
 %% We setup the verbatim mode
 
 %Author: C.G. van der Laan, Hunzeweg 57, 9893PB
@@ -603,17 +613,7 @@
 \def|{\bgroup\tt\setupverbatim
       \the\everyverbatim\relax
       \the\thisverbatim\relax
-      \def|{\egroup\thisverbatim{}}}
-\font\smtt=cmtt8
-\def\smvrb{\bgroup\smtt\setupverbatim
-  \the\everyverbatim\relax
-  \the\thisverbatim\relax
-  \def|{\egroup\thisverbatim{}}}
+      \def|{\egroup\thisverbatim={}}}
 
-%\endinput %14/2/94 cgl@risc1.rug.nl
+% \endinput %14/2/94 cgl@risc1.rug.nl
 
-%%%%
-%% Some macros that are special for ChezWEB
-
-\def\CAP{\note{This section captures}} % For the captures line
-\def\EXP{\note{This section exports}}  % For the exports line
