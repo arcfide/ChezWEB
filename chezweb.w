@@ -1433,17 +1433,32 @@ sign before the equivalence sign above.
 
 @p
 (define (print-named-chunk port texify name code sectnum caps exps sections)
+  @<Clean the captures and exports@>
   (format port
     "\\B\\4\\X~a:~a\\X${}~@[~a~]\\E{}$\\6~n~a\\par~n~?~?~@[~?~]"
     sectnum (texify name)
     (and (not (weave-sec-def? sections name sectnum)) "\\mathrel+")
     (chezweb-pretty-print code)
     "~@[\\CAP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~]"
-    (list (and (not (null? caps)) caps))
+    (list (and (not (null? clean-caps)) clean-caps))
     "~@[\\EXP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~]"
-    (list exps)
+    (list clean-exps)
     (and (weave-sec-def? sections name sectnum) "~@[~a~]~@[~a~]")
     (list (weave-sec-defs sections name) (weave-sec-refs sections name))))
+
+@ Normally a Scheme identifier name does not need any escaping or cleaning
+to be used directly in \TeX\ code. However, when special characters like
+|%| and |$| appear, this requires some intervention. Before we print any
+captures to our \TeX\ file, we need to make sure that they are cleaned up
+and we do this by wrapping each identifier in |\smvrb <id>!endverbatim|,
+which will escape out to a smaller font version of the main verbatim mode.
+
+@c (caps exps) => (clean-caps clean-exps)
+@<Clean the captures and exports@>=
+(define (clean id) 
+  (format "\\smvrb ~a|" id))
+(define clean-caps (and caps (map clean caps)))
+(define clean-exps (and exps (map clean exps)))
 
 @ Now we can easily handle the named chunk.
 
@@ -1528,6 +1543,7 @@ and other baddies.
     (cond
       [(null? code) (list->string (reverse res))]
       [(char=? #\! (car code)) (loop (cdr code) (cons* #\! #\! res))]
+      [(char=? #\| (car code)) (loop (cdr code) (cons* #\t #\r #\v #\! res))]
       [else (loop (cdr code) (cons (car code) res))])))
 (define (chezweb-pretty-print code)
   (with-output-to-string

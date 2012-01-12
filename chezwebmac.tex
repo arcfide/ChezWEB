@@ -604,6 +604,12 @@
       \the\everyverbatim\relax
       \the\thisverbatim\relax
       \def|{\egroup\thisverbatim{}}}
+\font\smtt=cmtt8
+\def\smvrb{\bgroup\smtt\setupverbatim
+  \the\everyverbatim\relax
+  \the\thisverbatim\relax
+  \def|{\egroup\thisverbatim{}}}
+
 %\endinput %14/2/94 cgl@risc1.rug.nl
 
 %%%%
