@@ -1916,28 +1916,27 @@ to typeset it specially inside of the verbatim environment to make sure
 that it looks right. We do this by defining an encoder that takes a 
 single name string, stripped of its whitespace, and returns another
 string that is suitable for entering it into the verbatim environment.
-This is done for weaving by using the |!| sign to allow for macro
-expansion, which will allow us to typeset a chunk in a non-verbatim
-mode. For example, if our chunk name is |blah| and it appears in section
-number 5, then we should be able to typeset it using the following
-output.
+Our technique is to exit out of the verbatim environment, and then get
+back into the verbatim environment as soon as we can. We typeset section
+names according to the following template, where 5 is the section number
+and blah is the name of the section.
 
 \medskip\verbatim
-!!X5:blah!!X
+\X5:blah\X
 !endverbatim \medskip
 
-\noindent Our encoder will close over a given, specific sections
+\noindent Our encoder will close over a given, specific |sections|
 database.
 
 @c (sections) => (encode)
 @<Define weave chunk reference encoder@>=
 (define (encode x)
   (let ([res (hashtable-ref sections x (make-section-info '@@< '() '()))])
-    (format "!X~a:~?!X"
+    (format "!endverbatim\\X~a:~?\\X\\verbatim~n"
       (let ([defs (section-info-defs res)])
         (if (null? defs) "" (car defs)))
       (let ([type (section-info-type res)])
-        (case type [(@@<) "!rm ~a!tt"] [(@@|(|) "\\\\{~a}"])) ; )
+        (case type [(@@<) "~a"] [(@@|(|) "\\\\{~a}"])) ; )
       (list x))))
 
 @ When we are weaving, and in the index, we have a concept of section
