@@ -577,15 +577,18 @@ in the appropriate section below.
 $$\.{slurp-code} : \\{tokens}\times\\{encode}\times\\{clean}
 \to\\{tokens-rest}\times\\{code-body-string}$$
 
-\noindent The |slurp-code| procedure takes three arguments:
+\noindent The |slurp-code| procedure takes four arguments:
 
 \medskip{\parindent=1.0in
 \item{|tokens|} A list whose head should be the start of a code body;
 \item{|encode|} A procedure that, when given a string representing a 
 chunk name, will encode that string into another string, suitable for
 use as part of the code body of either tangled or woven code;
-\item{|clean|} Finally, a cleaning procedure that will sanitize a 
-string for output.\par}\medskip
+\item{|clean|} A cleaning procedure that will sanitize a 
+string for output;
+\item{|render|} Finally, a procedure that will be called on the final
+result to do any post-processing, such as stripping of trailing 
+or leading whitespace.\par}\medskip
 
 \noindent
 The use of a cleaner allows the slurper to be used for both tangling 
@@ -598,36 +601,33 @@ pointer to the rest of the tokens after the body has been processed,
 and the other, the code body itself as a single string.
 
 @p
-(define (slurp-code tokens encode clean)
-  @<Define slurp verifier@>
-  (let loop ([tokens tokens] [res ""])
+(define (slurp-code tokens encode clean render)
+  (let loop ([tokens tokens] [res '()])
     (cond
-      [(null? tokens) (values '() (verify res))]
-      [(string? (car tokens))
-       (loop (cdr tokens) 
-             (string-append res (clean (car tokens))))]
-      [(eq? '@@< (car tokens))
-       @<Verify chunk reference syntax@>
-       (loop (cdddr tokens)
-         (string-append
-           res (encode (strip-whitespace (cadr tokens)))))]
-      [else (values tokens (verify res))])))
+     [(null? tokens) @<Return rest of tokens and slurped body@>]
+     [(string? (car tokens))
+      (loop (cdr tokens)
+	    (cons (clean (car tokens)) res))]
+     [(eq? '@@< (car tokens))
+      @<Verify chunk reference syntax@>
+      (loop (cdddr tokens)
+	    (cons (encode (cadr tokens)) res))]
+     [else @<Return rest of tokens and slurped body@>])))
 
-@ We will verify the return result to make sure that we don't have a 
-case that we don't want, such as when there is an empty program body.
-We also want to make sure that we strip off any of the whitespace before
-and after the piece of code, which we don't need, and which can affect
-our attempts at pretty printing.
+@ On completion of our slurping, we want to verify that we got 
+something useful in the code to start with before we do the final
+rendering and composition of the string elements.
 
-@c (tokens) => (verify)
-@<Define slurp verifier@>=
-(define (verify x)
-  (when (zero? (string-length x))
-    (error #f "expected code body" 
-      (list-head tokens (min (length tokens) 3))))
-  (when (for-all char-whitespace? (string->list x))
-    (error #f "empty chunk body" x))
-  (strip-whitespace x))
+@c (tokens res render) 
+@<Return rest of tokens and slurped body@>=
+(let ([res (apply string-append (reverse res))])
+  (when (zero? (string-length res))
+    (error #f 
+	   "expected code body" 
+	   (list-head tokens (min (length tokens) 3))))
+  (when (for-all char-whitespace? (string->list res))
+    (error #f "empty chunk body" res))
+  (values tokens (render res)))
 
 @ The syntax for a chunk reference is a chunk name string surrounded
 by an opening |@@<| and a closing |@@>|.
@@ -800,7 +800,10 @@ string that we find to the |*default*| key in the |top-level| table.
 @c (loop tokens top-level)
 @<Extend default top-level and |loop|@>=
 (define-values (ntkns body) 
-  (slurp-code (cdr tokens) tangle-encode (lambda (x) x)))
+  (slurp-code (cdr tokens) 
+	      tangle-encode 
+	      (lambda (x) x) 
+	      strip-whitespace))
 (hashtable-update! top-level '*default*
   (lambda (cur) (string-append cur body))
   "")
@@ -981,7 +984,8 @@ later referred to as |name| and |body| rather than as |car|s and
       (let-values ([(ntkns body) 
                     (slurp-code (list-tail tokens 3) 
                                 tangle-encode 
-                                (lambda (x) x))])
+                                (lambda (x) x)
+				strip-whitespace)])
         (values name body ntkns)))))
 
 @ We also want to define our own procedure to strip the whitespace
@@ -1392,8 +1396,12 @@ complete the section.
 
 @c (port txttkns sectnum encode)
 @<Weave program chunk@>=
-(let-values ([(rest body) (slurp-code (cdr txttkns) encode texify-code)])
-  (format port "\\B ~a \\par~n" (chezweb-pretty-print body))
+(let-values ([(rest body) 
+	      (slurp-code (cdr txttkns) 
+			  encode 
+			  clean-specials 
+			  chezweb-pretty-print)])
+  (format port "\\B ~a \\par~n" body)
   rest)
 
 @ If we encounter a captures code, this means that we should expect
@@ -1438,7 +1446,7 @@ sign before the equivalence sign above.
     "\\B\\4\\X~a:~a\\X${}~@[~a~]\\E{}$\\6~n~a\\par~n~?~?~@[~?~]"
     sectnum (texify name)
     (and (not (weave-sec-def? sections name sectnum)) "\\mathrel+")
-    (chezweb-pretty-print code)
+    code
     "~@[\\CAP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~n~]"
     (list (and (not (null? clean-caps)) clean-caps))
     "~@[\\EXP ~{~#[~;~a~;~a and ~a~:;~@{~a~#[~;, and ~:;, ~]~}~]~}.~n~]"
@@ -1446,27 +1454,13 @@ sign before the equivalence sign above.
     (and (weave-sec-def? sections name sectnum) "~@[~a~]~@[~a~]")
     (list (weave-sec-defs sections name) (weave-sec-refs sections name))))
 
-@ Normally a Scheme identifier name does not need any escaping or cleaning
-to be used directly in \TeX\ code. However, when special characters like
-|%| and |$| appear, this requires some intervention. Before we print any
-captures to our \TeX\ file, we need to make sure that they are cleaned up
-and we do this by wrapping each identifier in vertical bars,
-which will escape out to a smaller font version of the main verbatim mode.
+@ Before we can put any identifiers into the captures or exports lists, 
+we have to clean them and format them with an appropriate small typewriter 
+font. 
 
 @c (caps exps) => (clean-caps clean-exps)
 @<Clean the captures and exports@>=
-(define (clean id) 
-  (let loop ([res '()] [clst (string->list (symbol->string id))])
-    (cond
-      [(null? clst) 
-       (format "{\\smtt ~a}" (list->string (reverse res)))]
-      [(char=? #\% (car clst)) 
-       (loop (cons* #\% #\\ res) (cdr clst))]
-      [(char=? #\$ (car clst))
-       (loop (cons* #\$ #\\ res) (cdr clst))]
-      [(char=? #\& (car clst))
-       (loop (cons* #\& #\\ res) (cdr clst))]
-      [else (loop (cons (car clst) res) (cdr clst))])))
+(define (clean id) (format "{\\smtt ~a}" (clean-specials id)))
 (define clean-caps (and caps (map clean caps)))
 (define clean-exps (and exps (map clean exps)))
 
@@ -1483,7 +1477,9 @@ which will escape out to a smaller font version of the main verbatim mode.
   (unless (eq? '@@>= delim)
     (error #f "expected delimiter @@>=" delim))
   (let-values ([(rest body) 
-                (slurp-code (list-tail txttkns 3) encode texify-code)])
+                (slurp-code (list-tail txttkns 3) 
+			    encode clean-specials 
+			    chezweb-pretty-print)])
     (print-named-chunk
       port texify-section-text name body sectnum captures exports
       sections)
@@ -1504,7 +1500,9 @@ for. Namely, a file chunk does not have any captures or exports.
   (unless (eq? '@@>= delim)
     (error #f "expected delimiter @@>=" delim))
   (let-values ([(rest body) 
-                (slurp-code (list-tail txttkns 3) encode texify-code)])
+                (slurp-code (list-tail txttkns 3) 
+			    encode clean-specials
+			    chezweb-pretty-print)])
     (print-named-chunk
       port texify-filename name body sectnum '() #f sections)
     rest))
@@ -1536,31 +1534,58 @@ it uses |weave-file| instead of |tangle-file|.
 (exit 0)
 
 @* Pretty Printing. We want to implement some sort of pretty printing,
-but at the moment, that is still pretty difficult. Instead, we'll just
-insert everything verbatim and avoid the entire question.
-Using the verbatim package also helps. 
+but at the moment, that is still pretty difficult. 
+Instead, we do this sort of pseudo printing. This gets similiar results
+to a verbatim environment when combined with the |clean-specials| 
+procedure. Basically, we are explitizing all of the spaces in our file
+so that we can see them. We also turn any tabs into eight spaces. 
 We are assuming here that our code has been safely processed through 
-something that properly escapes any of the special verbatim codes when 
+something that properly escapes any of the special \TeX\ codes when 
 it needs to. That is, we want the code to be preprocessed for the
-verbatim environment. To help any programs that want to handle that, we
-define the |texify-code| procedure here that cleans up the code for the
-verbatim environment by escaping out the exclamation marks in the text 
-and other baddies.
+\TeX\ environment. 
 
 @p
-(define (texify-code code)
-  (let loop ([code (string->list code)] [res '()])
-    (cond
-      [(null? code) (list->string (reverse res))]
-      [(char=? #\! (car code)) (loop (cdr code) (cons* #\! #\! res))]
-      [(char=? #\| (car code)) (loop (cdr code) (cons* #\t #\r #\v #\! res))]
-      [else (loop (cdr code) (cons (car code) res))])))
-(define (chezweb-pretty-print code)
-  (with-output-to-string
-    (lambda ()
-      (printf "\\verbatim~n")
-      (printf "~a" code)
-      (printf "!endverbatim "))))
+(define chezweb-pretty-print
+  (let ([subs `((#\space . (#\space #\\))
+		(#\newline . ,(reverse (string->list "\\6\n")))
+		(#\tab . ,(reverse (string->list "\\ \\ \\ \\ \\ \\ \\ \\ "))))])
+    (lambda (code)
+      (let loop ([res '()] [clst (string->list (strip-whitespace code))])
+	(cond
+	 [(null? clst) (format "{\\tt ~a}" (list->string (reverse res)))]
+	 [(assq (car clst) subs) =>
+	  (lambda (sub) (loop (append (cdr sub) res) (cdr clst)))]
+	 [else (loop (cons (car clst) res) (cdr clst))])))))
+
+@ Normally a Scheme identifier name does not need any escaping or cleaning
+to be used directly in \TeX\ code. However, when special characters like
+|%| and |$| appear, this requires some intervention. 
+Before we write any Scheme code to our \TeX\ output we need to make sure
+that all of these special characters have been escaped. 
+
+@p
+(define clean-specials 
+  (let ()
+    (define (revstr str) (reverse (string->list str)))
+    (define subs
+      `((#\| . ,(revstr "\\vrt{}"      ))
+	(#\\ . ,(revstr "$\\backslash$"))
+	(#\{ . ,(revstr "$\\{$"        ))
+	(#\} . ,(revstr "$\\}$"        ))
+	(#\% . ,(revstr "\\%"          ))
+	(#\& . ,(revstr "\\&"          ))
+	(#\~ . ,(revstr "\\~{}"        ))
+	(#\$ . ,(revstr "\\$"          ))
+	(#\^ . ,(revstr "\\^{}"        ))
+	(#\_ . ,(revstr "\\_{}"        ))
+	(#\# . ,(revstr "\\#"          ))))
+    (lambda (x) 
+      (let loop ([res '()] [clst (string->list (format "~a" x))])
+	(cond
+	  [(null? clst) (list->string (reverse res))]
+	  [(assq (car clst) subs) =>
+	   (lambda (sub) (loop (append (cdr sub) res) (cdr clst)))]
+	  [else (loop (cons (car clst) res) (cdr clst))])))))
 
 @ We also want to handle the printing of some of the section text. In
 this case, all of the vertical bars that are found in such text need
@@ -1756,7 +1781,7 @@ the code and the sections are comma separated.
   (format port "\\I~a{~a}, ~{~a~^, ~}.~n" macro name (list-sort < sects)))
 (for-each
   (lambda (entry)
-    (let ([name (car entry)]
+    (let ([name (clean-specials (car entry))]
           [ident (cdr (assq '@@|\| (cdr entry)))]
           [roman (cdr (assq '@@^ (cdr entry)))]
           [typew (cdr (assq '@@. (cdr entry)))]
@@ -1880,7 +1905,8 @@ entry has the following form:
 \noindent The section numbers are comma separated sets of decimal
 numbers, and the section name includes the wrapping for the different
 type of section. The usage string is a normal usage string as generated
-by |weave-sec-refs|.
+by |weave-sec-refs|. We should be careful to escape out any special 
+characters that are a part of the section name.
 
 @c (sections)
 @<Write sections index@>=
@@ -1912,12 +1938,11 @@ in ascending order.
 
 @ This section information is especially useful when we want to do the 
 encoding of the chunk references. If we have a chunk reference, we need
-to typeset it specially inside of the verbatim environment to make sure
+to typeset it specially inside of the code environment to make sure
 that it looks right. We do this by defining an encoder that takes a 
 single name string, stripped of its whitespace, and returns another
-string that is suitable for entering it into the verbatim environment.
-Our technique is to exit out of the verbatim environment, and then get
-back into the verbatim environment as soon as we can. We typeset section
+string that is suitable for entering it into the code environment.
+We typeset section
 names according to the following template, where 5 is the section number
 and blah is the name of the section.
 
@@ -1932,7 +1957,7 @@ database.
 @<Define weave chunk reference encoder@>=
 (define (encode x)
   (let ([res (hashtable-ref sections x (make-section-info '@@< '() '()))])
-    (format "!endverbatim\\X~a:~?\\X\\verbatim~n"
+    (format "\\X~a:~?\\X"
       (let ([defs (section-info-defs res)])
         (if (null? defs) "" (car defs)))
       (let ([type (section-info-type res)])
