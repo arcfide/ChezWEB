@@ -10,3 +10,4 @@ mv chezweb.4 chezweb-4.eps
 mv chezweb.5 chezweb-5.eps
 ./chezweave chezweb.w
 xetex -papersize=letter chezweb
+cd doc && xetex -papersize=letter cwebman && cd ..

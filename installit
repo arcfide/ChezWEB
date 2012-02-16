@@ -41,7 +41,7 @@ echo "Done."
 
 # Copy documentation
 echo -n "Installing documentation..."
-$INSTALLDOC README chezweb.pdf $DOCDIR
+$INSTALLDOC README chezweb.pdf doc/cwebman.pdf $DOCDIR
 echo "Done."
 
 # Install libraries
