@@ -1,225 +1,93 @@
-ChezWEB: A WEB system for Scheme
-================================
+                      ┌──────────────────────────────────┐
+                      │ ChezWEB: A WEB system for Scheme │
+                      └──────────────────────────────────┘
 
-Copyright (c) 2011 Aaron W. Hsu <arcfide@sacrideo.us>.
+Copyright (c) 2012 Aaron W. Hsu <arcfide@sacrideo.us>.
 
-ChezWEB is a system for doing Knuthian style WEB programming in Scheme,
-and more particularly, it is implemented in Chez Scheme. It has a
-number of novel features, and is designed to provide a level of 
-integration with Scheme that is not to be found in other Literate
-Programming systems.
+ChezWEB is a system for doing Knuthian style WEB programming in Scheme, and
+more particularly, it is implemented in Chez Scheme.  It has a number of
+novel features, and is designed to provide a level of integration with
+Scheme that is not to be found in other Literate Programming systems. In
+particular, it implements hygienic named sections that perserve hygiene and
+scoping in the presence of definitions and the like.
 
-I have provided the quickstart information first, and you can find
-the rest of the documentation further down.
+I have provided the quickstart information first, and you can find the rest
+of the documentation further down.
 
-Installing ChezWEB (QuickStart)
--------------------------------
+Installing ChezWEB
+──────────────────
 
-The fastest way to install ChezWEB is to use the make file provided.
-There are a few constants defined at the top of the file, which you
-can change for your particular installation, but otherwise, it should
-be as easy as:
+The fastest way to install ChezWEB is to use the make file provided.  There
+are a few constants defined at the top of the file, which you can change for
+your particular installation, but otherwise, it should be as easy as:
 
-  $ make install
+  $ make build install
 
-which will install the bootfiles for ChezWEB into the appropriate
-Chez Scheme folder, as well as create the program links in the 
-appropriate bin directory. If you have custom needs, please make
-sure to edit the variables to make sure that things are installed
-correctly.
-
-The makefile assumes that you already have a version of Chez Scheme
-installed.
-
-Installing ChezWEB (The Gory Details)
--------------------------------------
+You should make sure you edit the constants to do what you want and to
+install everything where you want them installed.  The makefile assumes that
+you already have a version of Chez Scheme installed.
 
 A more complete installation line might look like this:
 
-  $ make install CSV=~/chezheap \
-    PETITE=/usr/local/bin/petite \
-    BIN=~/bin TEXMF=~/texmf/tex/chezweb MACHINE=i3le
-    
-The above line assumes that you want to install the heap files into your
-home directory and that you already have ~/chezheap in your
-SCHEMEHEAPDIRS environment variable. It also assumes that there is a
-non-standard location where the Petite Chez Scheme binary is installed.
-It assumes that you want to install cheztangle and chezweave into your
-local bin directory instead of system wide, and it also assumes that you
-want to install the TeX file into your local path as well. The MACHINE
-parameter indicates that you are using an intel 386 version of Chez
-Scheme.
+	$ make build install \
+	    PREFIX=<your_prefix> \
+	    TEXDIR=... \
+	    DOCDIR=... \
+	    BINDIR=... \
+	    LIBDIR=...
 
-The gory details of installing follow:
+You can learn more about these values by running the installit script
+without any arguments.  There are three main components to the ChezWEB
+system.  
 
-Basically, you want to do four things when you install ChezWEB:
+	1) ChezWEAVE and ChezTANGLE programs
+	2) chezwebmac.tex macros
+	3) Runtime library for independent use
 
-1) Build the boot files.
-2) Install the boot files into your heap path.
-3) Install the TeX file into your TeX path.
-4) Create the symlinks for cheztangle and chezweave.
+To get this all working, we have to execute three build scripts to link it 
+all up, followed by one install script.  
 
-1: Building the boot files
-
-  If you already have Chez Scheme installed, just typing 'make' should
-  build the boot files. You should not get errors or need to change
-  anything to make this work, assuming that 'scheme' is in your path.
-  
-2: Installing the boot files
-
-  If you are working from a binary distribution, you'll already have the
-  boot files, and if you are working from source, you should make sure
-  that you've finished building them.
-  
-  The install make target installs the boot files into 
-  
-    /usr/lib/csv8.1/$MACHINE
-    
-  And you should change this installation location if you have a
-  different place where you install the heap files. This could be if you
-  have a non-standard prefix that you used when installing ChezScheme,
-  or it might also happen if you want to install ChezWEB for your user
-  and not system-wide.
-  
-3: Installing the TeX macro file.
-
-  TeX files generated by ChezWEAVE require that you have the chezwebmac
-  file available in your TeX search path. Normalling this is something
-  like /usr/share/texmf-local or /usr/local/share/texmf. If you are on a
-  shared machine, often you will have a local texmf directory like
-  .texmf-local or texmf that can be found or created in your home
-  directory. Wherever you choose, you should install the chezwebmac.tex
-  file into one of these directories. The Makefile installs the
-  chezwebmac.tex file into the following path by default:
-  
-    /usr/share/texmf-local/tex/chezweb/chezwebmac.tex
-    
-  This is a good guess, but it will almost certainly need tweaking for
-  your system.
-  
-  After installation you should run texhash to make sure that the
-  chezwebmac.tex file is indexed.
-  
-4: Creating the symlinks
-
-  Every Chez Scheme program is a symlink to either the petite or scheme
-  executables. ChezTANGLE and ChezWEAVE are no different. Assuming that
-  you have the scheme program installed into /usr/bin/scheme, you would
-  need to do something like this:
-  
-    $ cd $BINDIR
-    $ ln -s /usr/bin/scheme cheztangle
-    $ ln -s /usr/bin/scheme chezweave
-    
-  This will finish the installation of ChezWEB, and you should now be
-  able to use the ChezWEB programs.
-  
-The Makefile should take care of all of this for you if you can remember
-to set the Makefile variables correctly.
+	bootstrap	Bootstraps the ChezWEB system
+	tangleit	Tangles the actual ChezWEB programs
+	weaveit		Weaves the ChezWEB documentation
+	installit	Installs all the components
 
 Using ChezWEB without the compiler
-----------------------------------
+──────────────────────────────────
 
-There are some scripts in the petite directory that will help users 
-who want to run ChezWEB without having the compiled version.
+It is possible to use ChezWEB without first building the entire system. 
+Support for this is largely untested, but the chezweave.ss and cheztangle.ss
+programs produced by the bootstrap procedure can be used to manually get the
+appropriately tangled elements.  See the tangleit script to see what is done
+to achieve this.  You can elide the compilation parts of this process to get
+what you want.
 
 System Requirements
--------------------
+───────────────────
 
-ChezWEB requires (Petite) Chez Scheme 8.x, as it is built on R6RS.
-
-What makes ChezWEB unique? Why should I use it?
------------------------------------------------
-
-If you are reading this, I am going to assume that you already believe
-in literate programming to some extent. Otherwise, if you don't find
-any benefit to literate programming at all, then you probably will not
-like ChezWEB.
-
-However, if you like the idea of literate programming, I can hopefully
-entice you into using ChezWEB for all your Literate Scheme needs.
-I created ChezWEB because I was tired of literate programming that
-wasn't Schemely, and that did not provide me with a proper level of
-integration with Scheme.
-
-Admittedly, the integration with Scheme in ChezWEB is lacking in the
-area of pretty printing and a few other formatting niceities, but this
-will hopefully be rectified by the first official 1.0 release. What
-it does provide, is an integration with the concepts that underly
-Scheme, including lexical scope, and the interaction environment.
-
-Literate programming is really a sophisticated form of macrology.
-Literate programming tools are like macro languages on top of the
-normal programming language. These are usually fairly baroque when
-you compare them to the hygienic sophistication that is available
-in Scheme through syntax-rules and the full programmatic power of
-syntax-case. However, they suffice quite well for other languages
-that have no concept of these tools. Unfortunately, while it is okay
-to have an additional macro preprocessor on top of my Scheme code,
-the normal Literate programming tools have a number of severe drawbacks
-that I don't like.
-
-The largest problem concerns lexical scope. The normal programming
-style one follows with a tool like CWEB or Noweb, is to have a bunch
-of chunks or sections that just drop themselves into wherever they
-are referenced. They are, in a sense, dynamically scoped. Scheme,
-though, is a lexically scoped language, and it's rather ugly to
-be dropping what is essentially a dynamically scoped macro language
-on top; if I wanted that, I would be using DEFMACRO and Common Lisp!
-
-ChezWEB bridges this gap. ChezWEB is actually built on top of the
-Scheme macro system. It's an integrated part of Scheme, not just a
-preprocessor on top of the Scheme macro system. This integration
-lets it have access to the very important concept of hygiene and
-lexical scope. When you define a section in ChezWEB, you define its
-environment as well, including any imports, any exports that are 
-visible outside of the chunk when it is referenced, as well as any
-variables that are dynamically scoped (captures) whenever that
-chunk is referenced. This means that you can control the scoping
-and visibility of variables in your literate programs in the same
-way that you already do with modules. In fact, the idea of a section
-in WEB naturally fits within the idea of a module in Scheme.
-
-Another complaint about literate programs is that you have to
-compile them before you can use them in your Scheme environment.
-Not so with ChezWEB. Because the code is actually Scheme code, you
-use tangle as you would any other Scheme REPL. In fact, cheztangle
-is just the Scheme REPL with an additional set of bindings for
-the control codes in ChezWEB. This means that you don't ever
-need to compile programs written in ChezWEB to use them. You just
-load them up and you can interact and debug them directly.
-
-Of course, you don't lose out on weaving because of these advantages,
-instead, when you weave a ChezWEB file, you get back your nice
-TeX file the way you would expect. I have tried to mirror the
-look and feel of normal CWEB documents as much as possible.
+ChezWEB is tested on (Petite) Chez Scheme 8.4+, as it is built on R6RS and
+relies on certain features introduced after version 8.0.  Earlier versions
+may run, but there is no guarantee, and you should really be using the
+latest version of Chez Scheme 8.x.
 
 Documentation
--------------
+─────────────
 
-You can find a Guide to ChezWEB for User's in the guide directory.
-Comments and suggestions for improvement are especially welcome here, 
-since the guide, while exhaustive in feature coverage, does not 
-really have much to say about any one thing.
+A copy of the CWEB manual is included with this distribution.  It provides
+a basic overview of how a system like this should normally work.  It does
+not focus on ChezWEB specifically, which is a known problem that I hope to
+rectify soon.  If there are any volunteers....
 
 Obtaining ChezWEB
------------------
+─────────────────
 
-The distribution of ChezWEB versions can be found here:
+Please visit the ChezWEB home page for the latest information on retrieving 
+ChezWEB.
 
-  <gopher://gopher.sacrideo.us/1chezweb>
-
-It is also possible to get the versions via Monotone, as well as the
-latest development branch.
-
-  Server: mtn.sacrideo.us
-  Branch: us.sacrideo.chezweb
-
-Tags are named CHEZWEB_MAJOR_MINOR_PATCH where MAJOR.MINOR.PATCH is
-the version for which you are looking. 
+	<http://www.sacrideo.us/v5/proj/chezweb>
 
 Contact/Support
----------------
+───────────────
 
 Please contact Aaron W. Hsu <arcfide@sacrideo.us> if you have any
 questions about the system, or if you have patches to commit. I 
