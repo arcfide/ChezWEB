@@ -9,6 +9,14 @@ INSTALLDOC="install -g $GROUP -o $OWNER -m 644"
 
 if [ -z $1 ]; then
   echo "Usage: installit <prefix>"
+  echo "You will want to set the following environment variables:"
+  echo ""
+  echo "    Name     Description (Default)"
+  echo "    ─────────────────────────────────"
+  echo "    TEXDIR   Your texmf-local directory (<prefix>/share/texmf-local)"
+  echo "    DOCDIR   Documentation (<prefix>/doc/chezweb-$VERSION)"
+  echo "    BINDIR   Binaries (<prefix>/bin)"
+  echo "    LIBDIR   Libraries (<prefix>/lib/chezweb)"
   exit 1
 fi
 
