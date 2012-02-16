@@ -1,14 +1,12 @@
-* Implement implicit indexing
+* Improve building for Petite users
 * Include
 * REPL printing in texts
 * Non-hygienic chunks
 * Pretty printer for Scheme
 * Deal with Unicode properly
-* Implement Scribble
 * Find a way of dealing with libraries
 * Add a verification pass so that we don't have to verify the code in 
   both weaving and tangling sections.
-
 
 NEW OPERATORS FOR VERSION 2
 
