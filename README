@@ -58,7 +58,7 @@ Using ChezWEB without the compiler
 If you only have Petite Chez Scheme, you can still use ChezWEB.  There are
 two things to change.  Firstly, build the system using the 'petite' target 
 instead of the 'build' target.  Secondly, make sure that your CHEZWEBHOME
-environmet variable points to the LIBDIR that you specified. 
+environment variable points to the LIBDIR that you specified. 
 
 System Requirements
 ───────────────────
