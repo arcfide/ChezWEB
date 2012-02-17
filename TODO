@@ -1,5 +1,3 @@
-* Improve building for Petite users
-* Include
 * REPL printing in texts
 * Non-hygienic chunks
 * Pretty printer for Scheme
