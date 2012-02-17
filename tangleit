@@ -10,7 +10,7 @@ if [[ $1 == "petite" ]]; then
   echo "Copying cheztangle.ss to cheztangle"
   cp cheztangle.ss cheztangle
   echo "Copying chezweave.ss to chezweave"
-  cp chezweave.ss cheztangle
+  cp chezweave.ss chezweave
   echo "Setting executable bit"
   chmod +x cheztangle chezweave
 else

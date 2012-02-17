@@ -50,6 +50,8 @@ if [[ -e runtime.so ]]; then
   $INSTALLDOC runtime.so $LIBDIR
 fi
 $INSTALLDOC runtime.sls $LIBDIR
+$INSTALLDOC runtime.ss $LIBDIR
+$INSTALLDOC chezweb.ss $LIBDIR
 echo "Done."
 
 # Install binaries

@@ -55,12 +55,10 @@ all up, followed by one install script.
 Using ChezWEB without the compiler
 ──────────────────────────────────
 
-It is possible to use ChezWEB without first building the entire system. 
-Support for this is largely untested, but the chezweave.ss and cheztangle.ss
-programs produced by the bootstrap procedure can be used to manually get the
-appropriately tangled elements.  See the tangleit script to see what is done
-to achieve this.  You can elide the compilation parts of this process to get
-what you want.
+If you only have Petite Chez Scheme, you can still use ChezWEB.  There are
+two things to change.  Firstly, build the system using the 'petite' target 
+instead of the 'build' target.  Secondly, make sure that your CHEZWEBHOME
+environmet variable points to the LIBDIR that you specified. 
 
 System Requirements
 ───────────────────

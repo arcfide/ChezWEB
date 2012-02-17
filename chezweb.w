@@ -698,11 +698,23 @@ section inside of a section that was started with the |@@(| control
 code. 
 
 The first step is to actually grab our runtime, which we will do when
-we compile the program:
+we compile the program, or, if we are using petite, we can hope that 
+the user has set up their CHEZWEBHOME environment variable correctly so
+that we can find it.
 
 @p
+(meta define (runtime-path)
+  (cond
+    [(file-exists? "runtime.ss") "runtime.ss"]
+    [(getenv "CHEZWEBHOME") => 
+     (lambda (p)
+       (let ([runtime (format "~a~aruntime.ss" p (directory-separator))])
+         (unless (file-exists? runtime)
+           (error #f "runtime.ss not found"))
+         runtime))]
+    [else (error #f "runtime.ss not found")]))
 (define-syntax (get-code x)
-  (call-with-input-file "runtime.ss" get-string-all))
+  (call-with-input-file (runtime-path) get-string-all))
 (define runtime-code (get-code))
 
 @ We can now define a program for tangling.
@@ -715,14 +727,24 @@ cheztangle <web_file>
 
 \noindent We will use an R6RS style program for this, assuming that
 all of our important library functions will be installed in {\tt
-chezweb.ss}.
+chezweb.ss}.  This creates a bit of a problem if the user is using 
+petite for everything, and thus, does not compile the chezweb.ss file 
+into the system.  To get around this, we allow the user to provide a 
+{\tt CHEZWEBHOME} environment variable that will be used to find the 
+chezweb.ss file in case it cannot be located. 
 
 @(cheztangle.ss@>=
 #! /usr/bin/env scheme-script
 (import (chezscheme))
 
-(module (tangle-file display-chezweb-version)
-  (include "chezweb.ss"))
+(define-syntax (include-chezweb x)
+  (define chezweb-home (getenv "CHEZWEBHOME"))
+  (when chezweb-home
+    (source-directories (cons chezweb-home (source-directories))))
+  (syntax-case x ()
+    [(k) #`(#,(datum->syntax #'k 'include) "chezweb.ss")]))
+
+(module (tangle-file display-chezweb-version) (include-chezweb))
 
 (display-chezweb-version "CHEZTANGLE")
 
@@ -1530,8 +1552,14 @@ it uses |weave-file| instead of |tangle-file|.
 #! /usr/bin/env scheme-script
 (import (chezscheme))
 
-(module (weave-file display-chezweb-version)
-  (include "chezweb.ss"))
+(define-syntax (include-chezweb x)
+  (define chezweb-home (getenv "CHEZWEBHOME"))
+  (when chezweb-home
+    (source-directories (cons chezweb-home (source-directories))))
+  (syntax-case x ()
+    [(k) #`(#,(datum->syntax #'k 'include) "chezweb.ss")]))
+
+(module (weave-file display-chezweb-version) (include-chezweb))
 
 (display-chezweb-version "CHEZWEAVE")
 
