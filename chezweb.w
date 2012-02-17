@@ -12,7 +12,7 @@
   \vfill}
 \def\botofcontents{\vfill
 \noindent
-Copyright $\copyright$ 2011 Aaron W. Hsu \.{arcfide@sacrideo.us}
+Copyright $\copyright$ 2012 Aaron W. Hsu \.{arcfide@sacrideo.us}
 \smallskip\noindent
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -47,6 +47,7 @@ accidently capturing or overwriting ones that you have used
 internally. It also encourages a cleaner approach to code reuse, and
 discourages hacks to get around the disadvantages of traditional
 literate programming.
+@^traditional literate programming@>
 
 @ Readers of this program are expected to be familiar with the
 \ChezWEB\ guide, as this program does not discuss the language at an
@@ -87,12 +88,11 @@ for delivering programs of higher quality, that others can read and
 understand more easily, and that can stand the rigors of many eyes and
 fingers working over the document.
 
-@ The current version of \ChezWEB\ is 2.0 and the current implementation
-is considered $\beta$-quality.
+@ The current version of \ChezWEB\ is 2.0.
 
 @p
 (define (display-chezweb-version tangle/weave)
-  (printf "This is ~a, ChezWEB Version 2.0 Beta.~n" tangle/weave))
+  (printf "This is ~a, ChezWEB Version 2.0.~n" tangle/weave))
 
 @* 2 The ChezWEB System. We divide the \ChezWEB\ system into two primary
 parts: the runtime elements, which are in charge of handling hygienic
@@ -105,6 +105,8 @@ handling code through two programs {\tt chezweave.ss} and {\tt
 cheztangle.ss}. Thus, we have the following diagram, which illustrates
 the relationship and dependencies of the various files that will be
 produced by tangling this web.
+@.chezweave@>
+@.cheztangle@>
 
 $$\includegraphics[width=4in]{chezweb-5.eps}$$
 
@@ -132,6 +134,7 @@ function and syntax of every control code. It does not go into detail,
 but it is meant to be used as a general reference point for developers who
 are familiar with the overall system, and want an at-a-glance picture of
 the \ChezWEB\ language. 
+@^Cheat Sheet@>
 
 $$\includegraphics[width=6in]{chezweb-3.eps}$$
 
@@ -156,6 +159,7 @@ which typesets |blah| as |code| in the index.
 
 @* The ChezWEB Runtime. Normal \CWEB\ programs do not have any
 runtime, and they operate completely at the equivalent of a macro
+@^runtime@>
 expansion phase before the C preprocessor runs. This is also how
 systems like {\tt noweb} and others work. All of these systems lack
 the hygiene properties that we want to preserve in a Scheme program,
@@ -176,13 +180,14 @@ hygiene proper and referential transparency. These properties may be
 stated casually as follows:
 
 \medskip{\narrower\noindent
-{\bf Hygiene.}
+{\bf Hygiene.}@^hygiene@>
 Any definition introduced in the body of the chunk that is not
 explicitly exported by the export and captures clauses is visible only
 within the scope of the chunk, and is not visible to any surrounding
 context that references the chunk.
 
 \smallskip\noindent{\bf Referential Transparency.}
+@^referential transparency@>
 Any free reference that appears in the body of the chunk will refer to
 the nearest lexical binding of the tangled output unless they are
 explicitly enumerated in the captures clause, in which case, they will
@@ -212,6 +217,9 @@ appears. So, top-level definitions will match for any free reference
 in the chunk body, but these are really the only references that are
 likely to be resolvable unless one explicitly captures them through
 means of the capture facility.
+@^top-level@>
+@^free variable@>
+@^free reference@>
 
 @ The macro itself takes the following syntax:
 
@@ -238,7 +246,7 @@ the chunk body.
 (module (@@< =>)
   (import-only (chezscheme))
 
-(define-syntax @@<
+(define-syntax @@< @.@@<@>
   (syntax-rules (=>)
     [(_ (name c ...) => (e ...) b1 b2 ...)
      (for-all identifier? #'(name c ... e ...))
@@ -265,19 +273,20 @@ use |alias| to link the two identifiers to the same underlying
 location.
 
 @(runtime.ss@>=
-(define-syntax (build-value-form x)
+(define-syntax (build-value-form x) @.build-value-form@>
   (syntax-case x ()
     [(_ id (ic ...) body ...)
      (with-syntax ([(oc ...) (datum->syntax #'id (syntax->datum #'(ic ...)))])
        #'(let () (alias ic oc) ... body ...))]))
 
 @ The |build-value-form| syntax 
-is used as a part of the |value-form| macro, which is what
+is used as a part of the |value-form| macro, which is what @.value-form@>
 does the initial definition of the macro for |name|. The |name| macro
 is just an identifier syntax that has clauses for the single
 identifier use and the macro call, but nothing for the |set!| clause,
 since that doesn't make sense. Because we don't care about this case,
 we can avoid the use of |make-variable-transformer| and instead use a
+@.make-variable-transformer@>
 regular |syntax-case| form.
 
 There is an interesting problem that arises if we try to just expand
@@ -326,7 +335,7 @@ ellipses, so we would expand the two body forms |(define...)| and
 |(a a b c)| with ellipses around them instead.
 
 @(runtime.ss@>=
-(define-syntax value-form
+(define-syntax value-form @.value-form@>
   (syntax-rules ()
     [(_ name (c ...) body ...)
      (define-syntax (name x)
@@ -355,7 +364,7 @@ lexical (inner) scope, while the |oc ...| and |oe ...| are the same for
 the surrounding context (outer).
 
 @(runtime.ss@>=
-(define-syntax (build-module-form x)
+(define-syntax (build-module-form x) @.build-module-form@>
   (syntax-case x ()
     [(_ id (ic ...) (ie ...) body ...)
      (with-syntax ([(oc ...) (datum->syntax #'id (syntax->datum #'(ic ...)))]
@@ -375,7 +384,7 @@ Thus, we only need to define the first form where it appears as a lone
 identifier reference in a definition context.
 
 @(runtime.ss@>=
-(define-syntax module-form
+(define-syntax module-form @.module-form@>
   (syntax-rules ()
     [(_ name (c ...) (e ...) body ...)
      (define-syntax (name x)
@@ -388,7 +397,7 @@ identifier reference in a definition context.
 the indirect exports for the |@@<| macro.
 
 @(runtime.ss@>=
-(indirect-export @@<
+(indirect-export @@< @.indirect-export@>
   module-form value-form build-module-form build-value-form)
 )
 
@@ -397,6 +406,7 @@ their own code, we provide a simple library for them to load the
 runtime code themselves. This enables them to use the macro as
 their own abstraction and have the chunk like reordering without
 actually requiring them to write their entire program in \ChezWEB{}.
+@^runtime library@>
 
 @(runtime.sls@>=
 #!chezscheme
@@ -432,7 +442,7 @@ We have the following parameters in our main loop:
 discussed further down.
 
 @p
-(define (chezweb-tokenize port)
+(define (chezweb-tokenize port) @.chezweb-tokenize@>
   (let loop ([tokens '()] [cur '()] [ports (list port)])
     (if (null? ports)
         @<Finish tokenizing and return token list@>
@@ -492,8 +502,9 @@ tokens as well. The list of tokens is accumulated in reverse order.
 (let ([nc (read-char (car ports))])
   (case nc
     [(#\@@) (loop tokens (cons c cur) ports)]
-    [(#\q) (get-line (car ports)) (loop tokens cur ports)]
-    [(#\space #\< #\p #\* #\e #\r #\( #\^ #\. #\: #\c) ;)
+    [(#\q) (get-line (car ports)) 
+           (loop tokens (cons #\newline cur) ports)]
+    [(#\space #\< #\p #\* #\e #\r #\( #\^ #\. #\: #\c) @q )
      @<Add buffer and control code to |tokens| and |loop|@>]
     [(#\>) @<Parse possible |@@>=| delimiter and |loop|@>]
     [(#\i) @<Include new file in |ports| and |loop|@>]
@@ -546,6 +557,7 @@ extraneous whitespace is not inserted into a file if the programmer
 does not intend it.  Extraneous whitespace at the beginning of a file
 can cause problems with things like scripts if the user is using the
 |@@(| control code to generate the script file.
+@^scripts@>
 
 If we do not find the correct character for closing, then we
 will treat it like a normal |@@>| code, which is a code which
@@ -601,7 +613,7 @@ pointer to the rest of the tokens after the body has been processed,
 and the other, the code body itself as a single string.
 
 @p
-(define (slurp-code tokens encode clean render)
+(define (slurp-code tokens encode clean render) @.slurp-code@>
   (let loop ([tokens tokens] [res '()])
     (cond
      [(null? tokens) @<Return rest of tokens and slurped body@>]
@@ -637,7 +649,7 @@ by an opening |@@<| and a closing |@@>|.
 !endverbatim \medskip
 
 \noindent The name of the chunk is the contents between the
-delimiters with the leading and trailing whitespace removed.
+delimiters with the leading and trailing whitespace removed. @^whitespace@>
 We can verify this with a simple set of tests.
 This isn't a fully thorough test but it should do the job.
 
@@ -775,7 +787,7 @@ the initial limbo string if there is any.
              [current-exports #f])
     (if (null? tokens)
         (values top-level named captures)
-        @<Dispatch on control code@>)))
+        @<Dispatch on control code and |loop|@>)))
 
 @ On each step of the loop, we will expect to have a single control
 code at the head of the |tokens| list.  Each time we iterate through
@@ -785,7 +797,7 @@ encounter a control code at the head of the list.
 
 @c (loop tokens top-level current-captures
      current-exports named captures)
-@<Dispatch on control code@>=
+@<Dispatch on control code and |loop|@>=
 (case (car tokens)
   [(|@@ | @@* @@e @@r @@^ @@. @@: @@i) (loop (cddr tokens) '() #f)]
   [(@@p) @<Extend default top-level and |loop|@>]
@@ -811,6 +823,7 @@ string that we find to the |*default*| key in the |top-level| table.
 
 @ I'd like to take a moment here to discuss what |tangle-encode| is. Our
 |slurp-code| procedure, which is defined elsewhere, takes an encoder,
+@.slurp-code@>
 which will expect it to receive a string for encoding a chunk reference
 name. The job of the encoder is to make sure that the string that it
 returns is something that belongs as valid code. For weaving, this is a
@@ -821,14 +834,14 @@ whitespace. The encoder will be a pretty straightforward use of
 |format|.
 
 @p
-(define (tangle-encode x) (format "~s" (string->symbol x)))
+(define (tangle-encode x) (format "~s" (string->symbol x))) @.tangle-encode@>
 
 @ Handling file name top-level updates works much like a named chunk,
 except that we do not have to deal with the issues of capture
 variables, which we will discuss shortly. We must verify that we have
 a valid syntax in the stream and then we can add the name in. We
 should remember to strip off the leading and trailing whitespace from
-the name in question.
+the name in question. @^whitespace@>
 
 @c (loop tokens top-level)
 @<Extend file top-level and |loop|@>=
@@ -864,7 +877,7 @@ are the captures and exports, if no exports were provided to us,
 then the second value will be false.
 
 @p
-(define (parse-captures-line str)
+(define (parse-captures-line str) @.parse-captures-line@>
   (with-input-from-string str
     (lambda ()
       (let* ([captures (read)] [arrow (read)] [exports (read)])
@@ -998,7 +1011,7 @@ down the ends from the right and the left to determine where the first
 non-whitespace character occurs in each direction.
 
 @p
-(define (strip-whitespace str)
+(define (strip-whitespace str) @.strip-whitespace@>
   (define (search str inc start end)
     (let loop ([i start])
       (cond
@@ -1118,7 +1131,7 @@ by additional annotations that we want to ignore, such as index
 forms, or the like.
 
 @p
-(define (tangle-file web-file)
+(define (tangle-file web-file) @.tangle-file@>
   (let ([default-file (format "~a.ss" (path-root web-file))]
         [tokens
           (cleanse-tokens-for-tangle
@@ -1140,19 +1153,19 @@ program like Xe\TeX\ can be used on the resulting \TeX\ file that
 $$\includegraphics[width=4in]{chezweb-2.eps}$$
 
 \noindent There are three distinct elements that make up
-weaving. Firstly, there is the actual weaving itself, which must take
-the \WEB\ text and convert it into the appropriate \TeX\ code, but the
-system must also handle the pretty printing of code and the
-cross-referencing, indexing services that \ChezWEB\
+weaving. Firstly, there is the actual weaving, which takes
+the \WEB\ text and converts it into the appropriate \TeX\ code. The
+weaver must also handle the pretty printing of code and the
+cross-referencing/indexing services that \ChezWEB\
 offers. Fortunately, each of these may be handled in their own
-passes. In this section we will handle the pass that generates the
-\TeX\ file proper. This means we will ignore the index and pretty
+passes. In this section we handle the pass that generates the
+\TeX\ file proper. This means we ignore the index and pretty
 printer; they are discussed elsewhere.
 
-At a high level, we will have a list of sections. At a glance, every
+At a high level, we have a list of sections. Every
 section consists of a code and text block. Text blocks are begun by
 using |@@ | or |@@*| and code blocks begin with |@@<| or |@@p|. All
-other control codes are annotations and notes discribing how to format
+other control codes are annotations and notes describing how to format
 text or to instantiate code blocks. We weave output pretty much in
 order. We must keep track of the section number. Our macros that we
 can use for formatting these chunks are as follows.
@@ -1189,23 +1202,23 @@ backspace one notch.
 {\bf Sections.} Completes the section names.\par}\medskip
 
 \noindent
-Each section has the same basic layout, where it will begin with
-either an N or an M macro, and end with {\tt fi}.
-There are three distinct passes over the code that we have when
-weaving a file. The first is the index, which is in charge of
-cleaning up our token list so that we don't have to deal with
-it in the rest of our code, as well as writing out the
-index file with any explicit or implicit index entries that
-may be there. Next, we will actually parse and write out the
+Each section has the same basic layout, where it begins with
+either an {\tt N} or an {\tt M} macro, and ends with {\tt fi}.
+There are three distinct passes over the code that when
+weaving a file. The first is the index, which
+cleans up our token list so that we don't have to deal with
+it in the rest of our code; it writes out the
+index file with any explicit or implicit index entries found.
+Next, we parse and write out the
 list of sections that we have, to the section list, and finally,
-we will do the weaving of the actual \TeX\ file for the
-final code document. We will deal chiefly with the third pass
+we weave the actual \TeX\ for the
+final code document. We deal chiefly with the third pass
 here.
 
 Let's examine the top-level loop that iterates over the tokens.
 
 @p
-(define (weave-file file)
+(define (weave-file file) @.weave-file@>
   (call-with-output-file (format "~a.tex" (path-root file))
     (lambda (port)
       @<Define section iterator@>
@@ -1220,7 +1233,7 @@ Let's examine the top-level loop that iterates over the tokens.
       (format port "\\inx~n\\fin~n\\con~n"))
     'replace))
 
-@ We weave the sections by iterating over the tokens and processing at
+@ We weave the sections by iterating over the tokens and processing
 a section at a time. We expect at each stage to have the set of tokens
 that were left after processing, and we can iterate on that.
 
@@ -1508,6 +1521,7 @@ for. Namely, a file chunk does not have any captures or exports.
     rest))
 
 @ We have now completely defined the |weave-file| procedure, which we
+@.weave-file@> @.chezweave@> @.cheztangle@>
 will use in the {\tt chezweave} program. This program has the exact
 same signature and layout as the {\tt cheztangle} program, except that
 it uses |weave-file| instead of |tangle-file|.
@@ -1610,7 +1624,7 @@ escaped the exclamation marks by doubling them.
 
 @ When we have a file chunk, we format the text of the name
 of the chunk differently than with a named chunk. We wrap it in
-italics and so forth using the double backslash macro.
+italics using the double backslash macro.
 
 @p
 (define (texify-filename txt)
@@ -1649,7 +1663,7 @@ number. This makes things easier, since we don't have to handle
 anything at the \TeX\ level. 
 
 @p
-(define (write-index file tokens)
+(define (write-index file tokens) @.write-index@>
   (let ([ofile (format "~a.idx" (path-root file))]
         [index (make-hashtable string-hash string=?)])
     (printf "Writing index file...~n")
@@ -1698,7 +1712,7 @@ types.
 @ We don't want to add any elements to our section number lists that is
 there already, so we have |set-cons| to do this for us.
 
-@p
+@p @.set-cons@>
 (define (set-cons x lst) (if (memv x lst) lst (cons x lst)))
 
 @ We also want to make it easy to insert a new entry into the index
@@ -1706,7 +1720,7 @@ database at any time, so we will make an insertion procedure that will
 insert a new index with a given section into the index database.
 
 @p
-(define (index-db-insert index code entry sectnum)
+(define (index-db-insert index code entry sectnum) @.index-db-insert@>
   (hashtable-update! index (strip-whitespace entry)
     (lambda (db)
       (let ([res (assq code db)])
@@ -1730,6 +1744,7 @@ the closing |@@>| tag.
 @ When we encounter a captures line, we want to insert an index entry
 for every symbol that we encounter in that line. We will make use of the
 |parse-captures-line| procedure to get out the symbols for the captures
+@.parse-captures-line@>
 line.
 
 @c (loop tokens sectnum res index)
@@ -1761,11 +1776,11 @@ leave it and add it to the result list as normal.
   sectnum)
 
 @ Once we have the entire index in the form of a hashtable, we want
-to sort them in the appropriate order and print each one. We will
+to sort them in the appropriate order and print each one. We 
 print the identifiers first, 
 the |@@:| codes second, followed by |@@^| and |@@.|. Each
-code will be associated with a number of sections, and we will
-print the section in ascending order. A single index entry looks
+code is associated with a number of sections, and we 
+print the sections in ascending order. A single index entry looks
 like:
 
 \medskip\verbatim
@@ -1831,7 +1846,7 @@ it gives information as to the type of the section, the list of sections
 where that chunk name is defined, and where the chunk is referenced. 
 
 @p
-(define (index-sections file tokens)
+(define (index-sections file tokens) @.index-sections@>
   (printf "Writing section index...")
   (let ([sections (make-hashtable string-hash string=?)])
     (let loop ([tokens tokens] [sectnum 0])
@@ -1920,6 +1935,7 @@ characters that are a part of the section name.
 @ We want to use |print-index| on each section that we receive in the 
 |sections| hashtable. All of the entries are sort alphabetically 
 in ascending order. 
+@.sections@> @.print-index@>
 
 @c (file sections)
 @<Write sections index@>=
@@ -1944,13 +1960,14 @@ single name string, stripped of its whitespace, and returns another
 string that is suitable for entering it into the code environment.
 We typeset section
 names according to the following template, where 5 is the section number
-and blah is the name of the section.
+and ``blah'' is the name of the section. 
 
 \medskip\verbatim
 \X5:blah\X
 !endverbatim \medskip
 
-\noindent Our encoder will close over a given, specific |sections|
+\noindent Our encoder will close over a given, specific |sections| 
+@.sections@>
 database.
 
 @c (sections) => (encode)
@@ -1961,7 +1978,7 @@ database.
       (let ([defs (section-info-defs res)])
         (if (null? defs) "" (car defs)))
       (let ([type (section-info-type res)])
-        (case type [(@@<) "~a"] [(@@|(|) "\\\\{~a}"])) ; )
+        (case type [(@@<) "{\\rm ~a}"] [(@@|(|) "\\\\{~a}"])) ; )
       (list x))))
 
 @ When we are weaving, and in the index, we have a concept of section
@@ -2013,7 +2030,7 @@ Fortunately, the formatting for the section index is different, simpler
 even. Thus, we don't use this procedure for that.
 
 @p
-(define (weave-sec-defs sections name)
+(define (weave-sec-defs sections name) @.weave-sec-defs@>
   (let ([res (hashtable-ref sections (strip-whitespace name) #f)])
     (and res 
          (let ([defs (section-info-defs res)])
@@ -2026,7 +2043,7 @@ even. Thus, we don't use this procedure for that.
 |U| macro and it uses section references instead of definitions.
 
 @p
-(define (weave-sec-refs sections name)
+(define (weave-sec-refs sections name) @.weave-sec-refs@>
   (let ([res (hashtable-ref sections (strip-whitespace name) #f)])
     (and res 
          (let ([refs (section-info-refs res)])
@@ -2041,17 +2058,19 @@ $$\.{weave-sec-def?} : \\{sections}\ \\{name}\ \\{secnum} \to \&{boolean}$$
 
 \noindent It will return true if the section number provided is the
 lowest number of the definition sections for that given section name. In
-otherwords, it will return true if the section number is the first time
+other words, it will return true if the section number is the first time
 that the given section |name| is defined.
 
 @p
-(define (weave-sec-def? sections name num)
+(define (weave-sec-def? sections name num) @.weave-sec-def?@>
   (let ([res (hashtable-ref sections (strip-whitespace name) #f)])
     (and res 
          (let ([defs (section-info-defs res)])
            (and (pair? defs) (= num (car (list-sort < defs))))))))
 
-@* TeX Macros.
+@* TeX Macros.  See the {\tt chezwebmac.tex} file for the macros that are 
+used in this file as well as for the default macros that are available to 
+the user of a \ChezWEB\ program. 
 
 @* Index.
 
