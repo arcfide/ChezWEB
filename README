@@ -14,8 +14,20 @@ scoping in the presence of definitions and the like.
 I have provided the quickstart information first, and you can find the rest
 of the documentation further down.
 
-Installing ChezWEB
-──────────────────
+Installing ChezWEB from Binary
+──────────────────────────────
+
+If you have a binary package of ChezWEB, you can simply drop the chezweave 
+and cheztangle programs wherever you want to install them.  You must make 
+sure that chezwebmac.tex is in your TEX search path.  The recommended
+location for this is in your TEXMFLOCAL directory under tex/generic.  You
+will need to run texhash afterwards to ensure that the TeX indexes are up to
+date.  The other files are for your perusal and use if you need them, but
+only the two program files and the TeX file are necessary to actually use
+ChezWEB. 
+
+Installing ChezWEB from Source
+──────────────────────────────
 
 The fastest way to install ChezWEB is to use the make file provided.  There
 are a few constants defined at the top of the file, which you can change for
@@ -52,8 +64,8 @@ all up, followed by one install script.
 	weaveit		Weaves the ChezWEB documentation
 	installit	Installs all the components
 
-Using ChezWEB without the compiler
-──────────────────────────────────
+Building ChezWEB without the compiler
+─────────────────────────────────────
 
 If you only have Petite Chez Scheme, you can still use ChezWEB.  There are
 two things to change.  Firstly, build the system using the 'petite' target 
