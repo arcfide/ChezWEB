@@ -1,0 +1,14 @@
+Checklist for a new release:
+
+[ ] All developer documentation current and double-checked for accuracy
+[ ] User documentation updated to reflect changes in user interface
+[ ] Passes test suite (not implemented yet)
+[ ] Known bugs documented
+[ ] All issues fixed by this release updated on Tracker
+[ ] Updated Version numbering in and out of main document
+[ ] Build system tested on Chez and Petite
+[ ] Updated ChangeLog
+[ ] Binaries released
+[ ] Website updated
+[ ] Announce to lists and newsgroups
+[ ] Post on Blog
