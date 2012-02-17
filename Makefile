@@ -1,9 +1,14 @@
 VERSION=2.0
 PREFIX=/usr
+MACHINE=ta6le
 TEXDIR=${PREFIX}/share/texmf-local
 DOCDIR=${PREFIX}/doc/chezweb-${VERSION}
 BINDIR=${PREFIX}/bin
 LIBDIR=${PREFIX}/lib/chezweb
+
+PACKAGE_FILES=README ChangeLog \
+    cheztangle chezweave chezweb.pdf doc/cwebman.pdf chezwebmac.tex \
+    runtime.so
 
 build: 
 	./bootstrap
@@ -24,6 +29,14 @@ install:
 	    DOCDIR=${DOCDIR} \
 	    LIBDIR=${LIBDIR} \
 	  ./installit ${PREFIX}
+
+package: build
+	rm -rf chezweb-${VERSION}-${MACHINE}
+	mkdir chezweb-${VERSION}-${MACHINE}
+	cp ${PACKAGE_FILES} chezweb-${VERSION}-${MACHINE}
+	tar cvJf chezweb-${VERSION}-${MACHINE}.tar.xz \
+	    chezweb-${VERSION}-${MACHINE}
+	rm -r chezweb-${VERSION}-${MACHINE}
 
 clean:
 	rm -rf runtime.ss runtime.sls cheztangle.ss chezweave.ss chezweb.ss
