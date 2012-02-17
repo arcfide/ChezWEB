@@ -68,6 +68,16 @@ relies on certain features introduced after version 8.0.  Earlier versions
 may run, but there is no guarantee, and you should really be using the
 latest version of Chez Scheme 8.x.
 
+If you want to actually do the weaving of the main ChezWEB document and 
+get some reasonable output, which includes running the weaveit program, 
+you will need to have a properly configured TeX Live installation with 
+a working MetaPost.  There have been some reports of misconfigured 
+TeX Live installations which result in MetaPost not working, which will 
+cause errors in the weaveit part of the build.  You do not actually 
+need to do this step if you just want to use the system, but you will 
+not get the documentation.  I recommend that you just make sure you 
+have a working MetaPost.
+
 Documentation
 ─────────────
 
