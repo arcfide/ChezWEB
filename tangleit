@@ -6,7 +6,7 @@ set -e
 chmod +x cheztangle.ss
 chmod +x chezweave.ss
 
-if [ $1 == "petite" ]; then
+if test "petite" = "$1"; then
   echo "Copying cheztangle.ss to cheztangle"
   cp cheztangle.ss cheztangle
   echo "Copying chezweave.ss to chezweave"
