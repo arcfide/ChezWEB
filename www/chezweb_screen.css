@@ -1,0 +1,18 @@
+@import "../../style.css";
+
+.info_bar {
+  float: right;
+  width: 2in;
+  border: 1px solid darkbrown;
+  padding: 10px;
+  margin: 0px 0px 10px 25px;
+  background-color: rgb(155, 155, 140);
+}
+
+.info_bar dt {
+  font-weight: bold;
+}
+
+.info_bar a {
+  color: darkblue;
+}
