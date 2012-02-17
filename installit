@@ -46,7 +46,10 @@ echo "Done."
 
 # Install libraries
 echo -n "Installing libraries..."
-$INSTALLDOC runtime.so $LIBDIR
+if [[ -e runtime.so ]]; then 
+  $INSTALLDOC runtime.so $LIBDIR
+fi
+$INSTALLDOC runtime.sls $LIBDIR
 echo "Done."
 
 # Install binaries

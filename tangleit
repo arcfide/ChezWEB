@@ -5,10 +5,20 @@ set -e
 ./cheztangle.ss chezweb.w
 chmod +x cheztangle.ss
 chmod +x chezweave.ss
-echo '(compile-program "cheztangle.ss")' | scheme -q
-echo '(compile-program "chezweave.ss")' | scheme -q
-echo "Renaming cheztangle.so to cheztangle"
-mv cheztangle.so cheztangle
-echo "Renaming chezweave.so to chezweave"
-mv chezweave.so chezweave
-echo '(compile-library "runtime.sls")' | scheme -q
+
+if [[ $1 == "petite" ]]; then
+  echo "Copying cheztangle.ss to cheztangle"
+  cp cheztangle.ss cheztangle
+  echo "Copying chezweave.ss to chezweave"
+  cp chezweave.ss cheztangle
+  echo "Setting executable bit"
+  chmod +x cheztangle chezweave
+else
+  echo '(compile-program "cheztangle.ss")' | scheme -q
+  echo '(compile-program "chezweave.ss")' | scheme -q
+  echo "Renaming cheztangle.so to cheztangle"
+  mv cheztangle.so cheztangle
+  echo "Renaming chezweave.so to chezweave"
+  mv chezweave.so chezweave
+  echo '(compile-library "runtime.sls")' | scheme -q
+fi

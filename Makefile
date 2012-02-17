@@ -10,6 +10,11 @@ build:
 	./tangleit
 	./weaveit
 	
+petite: 
+	./bootstrap
+	./tangleit petite
+	./weaveit
+	
 install:
 	env BINDIR=${BINDIR} \
 	    TEXDIR=${TEXDIR} \
