@@ -1,3 +1,62 @@
+Changs from 1.3.2 to 2.0:
+
+  Change versioning scheme to only two digits.
+
+  Improved README and documentation, though user guide is not quite there.
+
+  Completely new underlying infrastructure and interface, which operates 
+  mostly in the same way that CWEB does, with two offline programs 
+  cheztangle and chezweave. 
+
+  Output now looks like CWEB because it is based off of the cwebman.tex 
+  file
+
+  Improved support for Petite
+
+  Greatly improved build system
+
+  A copy of the CWEB manual is now included in place of the old and
+  incomplete guide; this will be expanded and changed in future releases 
+  to reflect unique ChezWEB-isms.
+
+  We have improved the underlying pretty printer in preparation for more 
+  sophisticated pretty printing.
+
+  Improved reliability of the output
+
+  Improved meta data tracking in captures and exports
+
+  Improved formatting of captures and exports
+
+  The programs chezweave and cheztangle now produce more helpful output 
+  to track down bugs and problems.
+
+  Empty section bodies are allowed now.
+
+  Fully new and mostly compatible CWEB syntax that is not nested
+  s-expressions
+
+  Support for including files
+
+  Indexing support with a section and keyword index.
+
+  Improved automatic table of contents
+
+  Section heading levels with nesting.
+
+  Implicit and explicit indexing support
+
+  Support for concatenation of sections
+
+  Section names do not need to have their captures threaded explicitely 
+  anymore
+
+  Support for automatic cross-referencing of section names and numbers
+
+  ChezWEB is now written in ChezWEB and can weave/tangle itself
+
+  This is a complete rewrite of the system
+
 Changes from 1.3.1 to 1.3.2:
 
   Fix the @> handling of ellipses in the case where we return a value 
