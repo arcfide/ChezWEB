@@ -815,13 +815,22 @@ the initial limbo string if there is any.
 code at the head of the |tokens| list.  Each time we iterate through
 the loop, we should remove all of the strings and other elements
 related to that control code, so that our next iteration will again
-encounter a control code at the head of the list.
+encounter a control code at the head of the list. We do not need to 
+check for index control codes here or otherwise because we assume 
+that we have already run |cleanse-tokens-for-tangle|
+@.cleans-tokens-for-tangle@> that removes all the unimportant 
+tokens that we don't want from the tokens list.  However, we do 
+have to be aware of empty unnamed section bodies. 
 
 @c (loop tokens top-level current-captures
      current-exports named captures)
 @<Dispatch on control code and |loop|@>=
 (case (car tokens)
-  [(|@@ | @@* @@e @@r @@^ @@. @@: @@i) (loop (cddr tokens) '() #f)]
+  [(@@*) (loop (cddr tokens) '() #f)]
+  [(|@@ |) 
+   (if (string? (cadr tokens))
+       (loop (cddr tokens) '() #f)
+       (loop (cdr tokens) '() #f))]
   [(@@p) @<Extend default top-level and |loop|@>]
   [(@@<) @<Extend named chunk and |loop|@>]
   [(|@@(|) @<Extend file top-level and |loop|@>]
@@ -1156,7 +1165,7 @@ forms, or the like.
 (define (tangle-file web-file) @.tangle-file@>
   (let ([default-file (format "~a.ss" (path-root web-file))]
         [tokens
-          (cleanse-tokens-for-tangle
+          (cleanse-tokens-for-tangle @.cleanse-tokens-for-tangle@>
             (call-with-input-file web-file chezweb-tokenize))])
     (let-values ([(top-level-chunks named-chunks captures)
                   @<Construct chunk tables |named|, |top-level|, and |captures|@>])
@@ -1845,7 +1854,7 @@ clean token list that conforms to what our tangling algorithm
 expects.
 
 @p
-(define (cleanse-tokens-for-tangle tokens)
+(define (cleanse-tokens-for-tangle tokens) @.cleans-tokens-for-tangle@>
   (let loop ([tokens tokens] [res '()])
     (cond
       [(null? tokens) (reverse res)]
