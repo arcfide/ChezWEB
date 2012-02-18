@@ -848,7 +848,7 @@ string that we find to the |*default*| key in the |top-level| table.
 	      (lambda (x) x) 
 	      strip-whitespace))
 (hashtable-update! top-level '*default*
-  (lambda (cur) (string-append cur body))
+  (lambda (cur) (format "~a~a~n" cur body))
   "")
 (loop ntkns '() #f)
 
@@ -879,7 +879,7 @@ the name in question. @^whitespace@>
 @<Verify and extract delimited chunk@>
 (let ([name (strip-whitespace name)])
   (hashtable-update! top-level name
-    (lambda (cur) (string-append cur body))
+    (lambda (cur) (format "~a~a~n" cur body))
     ""))
 (loop tknsrest '() #f)
 
@@ -965,7 +965,7 @@ captures list of |a b t| and the exports list to be |x y z u v|.
 @<Verify and extract delimited chunk@>
 (let ([name (string->symbol (strip-whitespace name))])
   (hashtable-update! named name
-    (lambda (cur) (string-append cur body))
+    (lambda (cur) (format "~a~a~n" cur body))
     "")
   (hashtable-update! captures name
     (lambda (cur) @<Extend captures and exports@>)
