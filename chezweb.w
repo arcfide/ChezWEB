@@ -2013,7 +2013,7 @@ database.
   (let ([res (hashtable-ref sections x (make-section-info '@@< '() '()))])
     (format "\\X~a:~?\\X"
       (let ([defs (section-info-defs res)])
-        (if (null? defs) "" (car defs)))
+        (if (null? defs) "" (fold-left min (most-positive-fixnum) defs)))
       (let ([type (section-info-type res)])
         (case type [(@@<) "{\\rm ~a}"] [(@@|(|) "\\\\{~a}"])) ; )
       (list x))))
