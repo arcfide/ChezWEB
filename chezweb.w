@@ -1485,7 +1485,7 @@ sign before the equivalence sign above.
 
 @p
 (define (print-named-chunk port texify name code sectnum caps exps sections)
-  @<Clean the captures and exports@>
+  @<Clean the captures and exports@> @.print-named-chunk@>
   (format port
     "\\B\\4\\X~a:~a\\X${}~@[~a~]\\E{}$\\6~n~a\\par~n~?~?~@[~?~]"
     sectnum (texify name)
@@ -1524,7 +1524,7 @@ font.
                 (slurp-code (list-tail txttkns 3) 
 			    encode clean-specials 
 			    chezweb-pretty-print)])
-    (print-named-chunk
+    (print-named-chunk @.print-named-chunk@>
       port texify-section-text name body sectnum captures exports
       sections)
     rest))
@@ -1547,7 +1547,7 @@ for. Namely, a file chunk does not have any captures or exports.
                 (slurp-code (list-tail txttkns 3) 
 			    encode clean-specials
 			    chezweb-pretty-print)])
-    (print-named-chunk
+    (print-named-chunk @.print-named-chunk@>
       port texify-filename name body sectnum '() #f sections)
     rest))
 
@@ -2074,7 +2074,8 @@ even. Thus, we don't use this procedure for that.
            (and (pair? defs) (>= (length defs) 2)
                 (format "\\A~[~;~{~s~}~;s~{~s and ~s~}~
                          ~:;s~{~#[~; and ~] ~s~^,~}~]."
-                        (length defs) (list-sort < defs)))))))
+                        (-1+ (length defs)) 
+                        (cdr (list-sort < defs))))))))
 
 @ The |weave-sec-refs| procedure is the same, except that it uses the 
 |U| macro and it uses section references instead of definitions.
