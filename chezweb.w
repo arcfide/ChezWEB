@@ -1386,7 +1386,8 @@ depth in two separate values.
 (let ([body (strip-whitespace (string->list orig))])
   (cond
     [(null? body) (error #f "Section contains no body" orig)]
-    [(char=? #\* (car body)) (values 0 (list->string (cdr body)))]
+    [(char=? #\* (car body)) 
+     (values 0 (list->string (strip-whitespace (cdr body))))]
     [else (extract-number '() body)]))
 
 @ After we weave the textual part of the sections, we need to handle
