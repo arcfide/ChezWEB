@@ -1959,13 +1959,14 @@ entry has the following form:
 numbers, and the section name includes the wrapping for the different
 type of section. The usage string is a normal usage string as generated
 by |weave-sec-refs|. We should be careful to escape out any special 
-characters that are a part of the section name.
+characters that are a part of the section name. If we have no section
+numbers listed we will use a placeholder of |'(0)|.
 
 @c (sections)
 @<Write sections index@>=
 (define (print-index port nums name type)
   (format port "\\I\\X~{~a~^, ~}:~?\\X~n~@[~a~n~]"
-    (list-sort < nums)
+    (list-sort < (if (null? nums) '(0) nums))
     (case type [(@@|(|) "\\\\{~a}"] [(@@<) "~a"]) ;)
     (list name)
     (weave-sec-refs sections name)))
