@@ -1,8 +1,8 @@
 VERSION=2.0
-PREFIX=/usr
+PREFIX=/usr/local
 MACHINE=ta6le
-TEXDIR=${PREFIX}/share/texmf-local
-DOCDIR=${PREFIX}/doc/chezweb-${VERSION}
+TEXDIR=${PREFIX}/share/texmf
+DOCDIR=${PREFIX}/share/doc/chezweb-${VERSION}
 BINDIR=${PREFIX}/bin
 LIBDIR=${PREFIX}/lib/chezweb
 
