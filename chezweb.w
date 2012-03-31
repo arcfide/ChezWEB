@@ -704,15 +704,12 @@ that we can find it.
 
 @p
 (meta define (runtime-path)
-  (cond
-    [(file-exists? "runtime.ss") "runtime.ss"]
-    [(getenv "CHEZWEBHOME") => 
-     (lambda (p)
-       (let ([runtime (format "~a~aruntime.ss" p (directory-separator))])
-         (unless (file-exists? runtime)
-           (error #f "runtime.ss not found"))
-         runtime))]
-    [else (error #f "runtime.ss not found")]))
+  (define (path d) (format "~a~aruntime.ss" d (directory-separator)))
+  (let loop ([dlst (source-directories)])
+    (cond
+      [(null? dlst) (error #f "runtime.ss not found")]
+      [(file-exists? (path (car dlst))) (path (car dlst))]
+      [else (loop (cdr dlst))])))
 (define-syntax (get-code x)
   (call-with-input-file (runtime-path) get-string-all))
 (define runtime-code (get-code))
