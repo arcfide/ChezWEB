@@ -740,7 +740,7 @@ chezweb.ss file in case it cannot be located.
 (define-syntax (include-chezweb x)
   (define chezweb-home (getenv "CHEZWEBHOME"))
   (source-directories
-    (cons (or chezweb-home (path-parent (car (command-line)))) 
+    (cons (or chezweb-home (path-parent (car (command-line))))
           (source-directories)))
   (syntax-case x ()
     [(k) #`(#,(datum->syntax #'k 'include) "chezweb.ss")]))
@@ -1565,7 +1565,6 @@ it uses |weave-file| instead of |tangle-file|.
 
 (define-syntax (include-chezweb x)
   (define chezweb-home (getenv "CHEZWEBHOME"))
-  (printf "(car (command-line)) => ~a~n" (car (command-line)))
   (source-directories
     (cons (or chezweb-home (path-parent (car (command-line))))
           (source-directories)))
