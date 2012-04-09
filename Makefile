@@ -19,9 +19,6 @@ petite:
 	./bootstrap
 	./tangleit petite
 	./weaveit
-	@echo ""
-	@echo ""
-	@echo "******* Remember to set CHEZWEBHOME=${LIBDIR} *******"
 	
 install:
 	env BINDIR=${BINDIR} \
