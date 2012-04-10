@@ -1,4 +1,7 @@
-\input graphicx
+% \input graphicx
+
+\input supp-pdf
+\def\epsfbox#1{\hbox{\convertMPtoPDF{#1}{1}{1}}}
 
 \def\ChezWEB{Chez\.{WEB}}
 \def\CWEB{\.{CWEB}}
@@ -108,7 +111,8 @@ produced by tangling this web.
 @.chezweave@>
 @.cheztangle@>
 
-$$\includegraphics[width=4in]{chezweb-5.eps}$$
+%$$\includegraphics[width=4in]{chezweb-5.eps}$$
+$$\epsfbox{chezweb.5}$$
 
 The runtime system is actually used by the tangle program when tangling
 programs, as {\tt cheztangle} will embed the runtime into the tangled
@@ -136,7 +140,8 @@ are familiar with the overall system, and want an at-a-glance picture of
 the \ChezWEB\ language. 
 @^Cheat Sheet@>
 
-$$\includegraphics[width=6in]{chezweb-3.eps}$$
+%$$\includegraphics[width=6in]{chezweb-3.eps}$$	
+$$\epsfbox{chezweb.3}$$
 
 {\parindent = 0.5in
 \item{\.{@@\ }} Start a new normal section.
@@ -667,7 +672,8 @@ converting it to a Scheme file. In the current implementation,
 the tangled code should run self contained on its own, 
 without the need of any other files.
 
-$$\includegraphics[width=3in]{chezweb-4.eps}$$
+%$$\includegraphics[width=3in]{chezweb-4.eps}$$
+$$\epsfbox{chezweb.4}$$
 
 \noindent Once we have this list of tokens, we can in turn
 write a simple program to tangle the output. Tangling actually
@@ -1055,7 +1061,8 @@ non-whitespace character occurs in each direction.
 @ Now we have to create the actual output files. The default output 
 file will have the following layout:
 
-$$\includegraphics[height=1.25in]{chezweb-1.eps}$$
+%$$\includegraphics[height=1.25in]{chezweb-1.eps}$$
+$$\epsfbox{chezweb.1}$$
 @^Chunk layout@>
 
 \noindent The above diagram illustrates the relative positions of the 
@@ -1179,7 +1186,8 @@ forms, or the like.
 program like Xe\TeX\ can be used on the resulting \TeX\ file that
 {\tt chezweave} outputs to make the PDF.
 
-$$\includegraphics[width=4in]{chezweb-2.eps}$$
+%$$\includegraphics[width=4in]{chezweb-2.eps}$$
+$$\epsfbox{chezweb.2}$$
 
 \noindent There are three distinct elements that make up
 weaving. Firstly, there is the actual weaving, which takes
@@ -1281,7 +1289,8 @@ limbo, where there is no initial code prefixing its content. For limbo
 we insert the code block literally into the output. We can divide our
 sections and chunks into the following taxonomy:
 
-$$\includegraphics[width=6in]{chezweb-3.eps}$$
+%$$\includegraphics[width=6in]{chezweb-3.eps}$$
+$$\epsfbox{chezweb.3}$$
 
 \noindent Note that we do not allow a code section to immediately
 follow another code section. Every section must start with a text

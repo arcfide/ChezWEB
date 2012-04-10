@@ -3,11 +3,6 @@
 set -e
 mpost chezweb.mp
 echo "Renaming ChezWEB MetaPost diagrams."
-mv chezweb.1 chezweb-1.eps
-mv chezweb.2 chezweb-2.eps
-mv chezweb.3 chezweb-3.eps
-mv chezweb.4 chezweb-4.eps
-mv chezweb.5 chezweb-5.eps
 ./chezweave chezweb.w
-xetex -papersize=letter chezweb
-cd doc && xetex -papersize=letter cwebman && cd ..
+pdftex chezweb
+cd doc && pdftex cwebman && cd ..
