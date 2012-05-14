@@ -1633,7 +1633,7 @@ that all of these special characters have been escaped.
 	(#\{ . ,(revstr "$\\{$"        ))
 	(#\} . ,(revstr "$\\}$"        ))
 	(#\% . ,(revstr "\\%"          ))
-	(#\& . ,(revstr "\\&"          ))
+	(#\& . ,(revstr "\\AM{}"       ))
 	(#\~ . ,(revstr "\\~{}"        ))
 	(#\$ . ,(revstr "\\$"          ))
 	(#\^ . ,(revstr "\\^{}"        ))
