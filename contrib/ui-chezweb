@@ -1,0 +1,11 @@
+#! /bin/ksh
+
+set -e
+
+mkdir -p $HOME/bin $HOME/texmf/tex/generic
+ln -sf /nobackup/awhsu/ChezWEB/cheztangle ~/bin/cheztangle
+ln -sf /nobackup/awhsu/ChezWEB/chezweave ~/bin/chezweave
+cp -f /nobackup/awhsu/ChezWEB/chezwebmac.tex $HOME/texmf/tex/generic/
+texhash
+
+echo "ChezWEB installed successfully!"
