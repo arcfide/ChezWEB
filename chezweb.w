@@ -1593,6 +1593,68 @@ it uses |weave-file| instead of |tangle-file|.
 (weave-file (car (command-line-arguments)))
 (exit 0)
 
+@* Pretty printing. To get the pretty printer, we need a token stream, 
+but it is important that we have a token stream that does not 
+strip important information from our code. We will use |read-token| to 
+assist with this, but since it strips out important information such 
+as the spaces and newlines in code, we will need to wrap this function 
+in another that does not do this stripping. It takes in a string 
+and tokenizes it appropriately, giving back a list of tokens. 
+These are the valid token types:
+
+@c () => ()
+@<Pretty printer@>=
+(define token-types '(whitespace newline token comment))
+
+@ Are token list will be a list of token values, where a token value 
+is a list whose |car| is a token type, and whose |cdr| contains 
+relevant information for that token type. 
+
+\medskip{\parindent = 1in 
+\item{\sl whitespace} Stores the number of spaces of whitespace to have
+\item{\sl newline} No additional information necessary
+\item{\sl token} Stores the token subtype, it's value, and
+its string representation
+\item{\sl comment} The comment string
+\par}\medskip
+
+@c () => (string->token-list)
+@<Pretty printer@>=
+(define (string->token-list str)
+  (define (token-list p)
+    (let ([c (get-char p)])
+      (cond
+       [(eof-object? c) '()]
+       [(eq? #\newline c) (cons `(newline) (token-list p))]
+       [(char-whitespace? c)
+	(let ([cnt (slurp-whitespace p)])
+	  (cons `(whitespace ,cnt) (token-list p)))]
+       [(eq? #\; c) 
+	(let ([line (get-line p)])
+	  (cons `(comment ,line) (token-list p)))]
+       [else
+	 (file-position p (- (file-position) -))
+	 (let-values ([(type val s e) (read-token p)])
+	   (let ([srep (get-string-n p (- e s))])
+	     (cons `(token ,type ,val ,srep) (token-list p))))])))
+  (let ([p (open-string-input-port str)])
+    (let ([tlst (token-list p)])
+      (close-port p)
+      tlst)))
+
+@ The above code requires |slurp-whitespace| to be defined.
+
+@c () => ()
+@<Pretty printer@>=
+(define (slurp-whitespace p)
+  (let loop ([cnt 1])
+    (let ([c (peek-char p)])
+      (cond
+	[(eof-object? c) cnt]
+	[(eq? #\newline c) cnt]
+	[(char-whitespace? c) (get-char p) (loop (+ cnt 1))]
+	[else cnt]))))
+
 @* Pretty Printing. We want to implement some sort of pretty printing,
 but at the moment, that is still pretty difficult. 
 Instead, we do this sort of pseudo printing. This gets similiar results
