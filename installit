@@ -1,8 +1,8 @@
 #! /bin/sh
 
 VERSION=2.0
-OWNER=root
-GROUP=root
+OWNER=${OWNER:-root}
+GROUP=${GROUP:-root}
 
 INSTALLBIN="install -g $GROUP -o $OWNER -m 755"
 INSTALLDOC="install -g $GROUP -o $OWNER -m 644"

@@ -4,3 +4,5 @@ TEXDIR=/usr/share/texmf-local
 DOCDIR=/usr/doc/chezweb-${VERSION}
 BINDIR=${PREFIX}/bin
 LIBDIR=${PREFIX}/lib64/chezweb
+OWNER=root
+GROUP=root

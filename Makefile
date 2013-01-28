@@ -21,6 +21,8 @@ install:
 	    TEXDIR=${TEXDIR} \
 	    DOCDIR=${DOCDIR} \
 	    LIBDIR=${LIBDIR} \
+	    OWNER=${OWNER} \
+	    GROUP=${GROUP} \
 	  ./installit ${PREFIX}
 
 package: build
