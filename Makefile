@@ -1,10 +1,6 @@
 VERSION=2.0
-PREFIX=/usr/local
-MACHINE=ta6le
-TEXDIR=${PREFIX}/share/texmf
-DOCDIR=${PREFIX}/share/doc/chezweb-${VERSION}
-BINDIR=${PREFIX}/bin
-LIBDIR=${PREFIX}/lib/chezweb
+
+include config.mk  
 
 PACKAGE_FILES=README ChangeLog \
     cheztangle chezweave chezweb.pdf doc/cwebman.pdf chezwebmac.tex \
