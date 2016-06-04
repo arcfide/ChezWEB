@@ -164,7 +164,7 @@ which typesets |blah| as |code| in the index.
 
 @* The ChezWEB Runtime. Normal \CWEB\ programs do not have any
 runtime, and they operate completely at the equivalent of a macro
-@^runtime@>
+@^runtime@>%
 expansion phase before the C preprocessor runs. This is also how
 systems like {\tt noweb} and others work. All of these systems lack
 the hygiene properties that we want to preserve in a Scheme program,
@@ -192,7 +192,7 @@ within the scope of the chunk, and is not visible to any surrounding
 context that references the chunk.
 
 \smallskip\noindent{\bf Referential Transparency.}
-@^referential transparency@>
+@^referential transparency@>%
 Any free reference that appears in the body of the chunk will refer to
 the nearest lexical binding of the tangled output unless they are
 explicitly enumerated in the captures clause, in which case, they will
@@ -291,7 +291,7 @@ is just an identifier syntax that has clauses for the single
 identifier use and the macro call, but nothing for the |set!| clause,
 since that doesn't make sense. Because we don't care about this case,
 we can avoid the use of |make-variable-transformer| and instead use a
-@.make-variable-transformer@>
+@.make-variable-transformer@>%
 regular |syntax-case| form.
 
 There is an interesting problem that arises if we try to just expand
