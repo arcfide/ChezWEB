@@ -14,18 +14,6 @@ scoping in the presence of definitions and the like.
 I have provided the quickstart information first, and you can find the rest
 of the documentation further down.
 
-Installing ChezWEB from Binary
-──────────────────────────────
-
-If you have a binary package of ChezWEB, you can simply drop the chezweave 
-and cheztangle programs wherever you want to install them.  You must make 
-sure that chezwebmac.tex is in your TEX search path.  The recommended
-location for this is in your TEXMFLOCAL directory under tex/generic.  You
-will need to run texhash afterwards to ensure that the TeX indexes are up to
-date.  The other files are for your perusal and use if you need them, but
-only the two program files and the TeX file are necessary to actually use
-ChezWEB. 
-
 Installing ChezWEB from Source
 ──────────────────────────────
 
@@ -97,14 +85,6 @@ A copy of the CWEB manual is included with this distribution.  It provides
 a basic overview of how a system like this should normally work.  It does
 not focus on ChezWEB specifically, which is a known problem that I hope to
 rectify soon.  If there are any volunteers....
-
-Obtaining ChezWEB
-─────────────────
-
-Please visit the ChezWEB home page for the latest information on retrieving 
-ChezWEB.
-
-	<http://www.sacrideo.us/v5/proj/chezweb>
 
 Contact/Support
 ───────────────
