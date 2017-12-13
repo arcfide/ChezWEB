@@ -1,0 +1,15 @@
+config.mk
+cheztangle
+chezweave
+*.idx
+*.log
+*.mpx
+*.pdf
+*.scn
+*.so
+*.toc
+chezweb.tex
+chezweb.[1-9]
+*.ss
+!bootstrap.ss
+runtime.sls
