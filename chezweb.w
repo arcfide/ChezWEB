@@ -495,7 +495,7 @@ sort.
 @ Most of the control codes can be determined by reading ahead only
 one more character, but dealing with |@@>=| requires two character
 lookaheads. Additionally, there is an escape control code
-(|@@@@|) that let's us escape out the ampersand if we really want to
+(|@@@@|) that lets us escape out the ampersand if we really want to
 put a literal two characters into our text rather than to use a
 control code. If we do find a token, we want that token to be encoded
 as the appropriate symbol. We will first add any buffer left in |cur|
